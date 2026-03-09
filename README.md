@@ -158,6 +158,89 @@ An interface will appear showing results as they load, letting you track the age
   <img src="assets/cli/cli_transaction.png" width="100%" style="display: inline-block; margin: 0 2%;">
 </p>
 
+## Docker Deployment
+
+TradingAgents provides Docker support for both local development and production deployments with dual interface modes (TUI and Web UI).
+
+### Quick Start
+
+**Clone and navigate to the project:**
+```bash
+git clone https://github.com/TauricResearch/TradingAgents.git
+cd TradingAgents
+```
+
+**Configure environment variables:**
+```bash
+cp docker/docker.env.example .env
+# Edit .env with your API keys
+```
+
+**Run with Docker Compose:**
+
+**TUI Mode (Terminal Interface):**
+```bash
+cd docker
+docker compose run --rm -it app
+```
+
+**Web UI Mode (Chainlit Interface):**
+```bash
+cd docker
+APP_MODE=web docker compose up
+```
+
+Access the web interface at `http://localhost:8501`
+
+### Configuration
+
+The application supports two interface modes controlled by the `APP_MODE` environment variable:
+
+- `tui` - Terminal UI (default, interactive terminal)
+- `web` - Chainlit web interface (browser-based, production-ready)
+
+### Environment Variables
+
+Set the following environment variables:
+
+**Required:**
+- `APP_MODE` - Interface mode: `tui` or `web`
+- `OPENAI_API_KEY` - OpenAI API key (if using OpenAI)
+- `GOOGLE_API_KEY` - Google API key (if using Gemini)
+- `ANTHROPIC_API_KEY` - Anthropic API key (if using Claude)
+- `XAI_API_KEY` - xAI API key (if using Grok)
+- `OPENROUTER_API_KEY` - OpenRouter API key (if using OpenRouter)
+- `ALPHA_VANTAGE_API_KEY` - Alpha Vantage API key for financial data
+
+**Optional:**
+- `REDIS_HOST` - Redis host (default: `redis`)
+- `REDIS_PORT` - Redis port (default: `6379`)
+
+### Advanced Usage
+
+**Development with hot-reload:**
+Uncomment the volumes section in `docker/docker-compose.yml` for code hot-reloading.
+
+**Production deployment:**
+```bash
+cd docker
+APP_MODE=web docker compose up -d
+```
+
+**Custom port for Web UI:**
+Modify the ports mapping in `docker/docker-compose.yml`:
+```yaml
+ports:
+  - "8080:8501"  # Access web UI on port 8080
+```
+
+### Docker Compose Services
+
+The Docker Compose setup includes:
+
+- **app** - TradingAgents application (multi-stage build with Python 3.13 + Conda)
+- **redis** - Redis 7.2 Alpine for caching and state management
+
 ## TradingAgents Package
 
 ### Implementation Details

@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: tradingagents-app
+    environment:
+      - APP_MODE=${APP_MODE:-tui}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # LLM Provider API Keys (set these in your environment or .env file)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
+    ports:
+      - "8501:8501"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - tradingagents-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8501"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Uncomment for development with hot-reload
+    # volumes:
+    #   - ../:/app
+    #   - /app/.git
+    #   - /app/tradingagents/__pycache__
+    #   - /app/tradingagents/**/__pycache__
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: tradingagents-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - tradingagents-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Uncomment for persistence
+    # volumes:
+    #   - redis-data:/data
+    restart: unless-stopped
+
+# Uncomment for persistence
+# volumes:
+#   redis-data:
+#     driver: local
+
+networks:
+  tradingagents-network:
+    driver: bridge
