@@ -152,6 +152,52 @@ An interface will appear showing results as they load, letting you track the age
   <img src="assets/cli/cli_transaction.png" width="100%" style="display: inline-block; margin: 0 2%;">
 </p>
 
+### Development
+
+**Tooling:**
+- **uv** - Python package management (>= 0.9.25)
+- **ruff** - Python linting and formatting (>= 0.15.5)
+- **asdf** - Tool version management
+
+**Install tools with asdf:**
+```bash
+asdf install
+asdf reshim python
+```
+
+**Common commands:**
+```bash
+# Install dependencies
+uv sync
+
+# Run with virtualenv
+uv run python main.py
+
+# Add/remove dependencies
+uv add <package>
+uv remove <package>
+
+# Lint code
+ruff check .
+ruff check --fix .
+
+# Format code
+ruff format .
+
+# Run both
+ruff check . && ruff format .
+```
+
+**Update tools:**
+```bash
+# Check current versions
+asdf current
+
+# Update to latest versions
+asdf plugin update python
+asdf plugin update uv
+asdf plugin update ruff
+```
 ## Docker Deployment
 
 TradingAgents provides Docker support for both local development and production deployments with dual interface modes (TUI and Web UI).
@@ -278,6 +324,16 @@ See `tradingagents/default_config.py` for all configuration options.
 ## Contributing
 
 We welcome contributions from the community! Whether it's fixing a bug, improving documentation, or suggesting a new feature, your input helps make this project better. If you are interested in this line of research, please consider joining our open-source financial AI research community [Tauric Research](https://tauric.ai/).
+
+**Development Workflow:**
+1. Fork and clone the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Install dependencies: `uv sync`
+4. Make your changes
+5. Run linting and formatting: `ruff check . && ruff format .`
+6. Test your changes
+7. Commit with clear messages
+8. Push and create a pull request
 
 ## Citation
 
