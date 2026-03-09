@@ -36,7 +36,9 @@ def format_datetime_for_api(date_input) -> str:
     elif isinstance(date_input, datetime):
         return date_input.strftime("%Y%m%dT%H%M")
     else:
-        raise ValueError(f"Date must be string or datetime object, got {type(date_input)}")
+        raise ValueError(
+            f"Date must be string or datetime object, got {type(date_input)}"
+        )
 
 
 class AlphaVantageRateLimitError(Exception):
@@ -45,7 +47,7 @@ class AlphaVantageRateLimitError(Exception):
 
 def _make_api_request(function_name: str, params: dict) -> dict | str:
     """Helper function to make API requests and handle responses.
-    
+
     Raises:
         AlphaVantageRateLimitError: When API rate limit is exceeded
     """
@@ -78,8 +80,13 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
         # Check for rate limit error
         if "Information" in response_json:
             info_message = response_json["Information"]
-            if "rate limit" in info_message.lower() or "api key" in info_message.lower():
-                raise AlphaVantageRateLimitError(f"Alpha Vantage rate limit exceeded: {info_message}")
+            if (
+                "rate limit" in info_message.lower()
+                or "api key" in info_message.lower()
+            ):
+                raise AlphaVantageRateLimitError(
+                    f"Alpha Vantage rate limit exceeded: {info_message}"
+                )
     except json.JSONDecodeError:
         # Response is not JSON (likely CSV data), which is normal
         pass

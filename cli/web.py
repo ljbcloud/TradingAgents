@@ -54,7 +54,9 @@ Let's configure your analysis session.
     ).send()
 
     if ticker.get("value") == "custom":
-        custom_ticker = await cl.AskUserMessage(content="Enter the ticker symbol:").send()
+        custom_ticker = await cl.AskUserMessage(
+            content="Enter the ticker symbol:"
+        ).send()
         ticker_symbol = custom_ticker.get("output").upper()
     else:
         ticker_symbol = ticker.get("value")
@@ -62,12 +64,14 @@ Let's configure your analysis session.
     # Ask for date
     date_response = await cl.AskUserMessage(
         content="Enter the analysis date (format: YYYY-MM-DD) or press Enter for today:",
-        timeout=60
+        timeout=60,
     ).send()
 
     if date_response.get("output").strip():
         try:
-            analysis_date = datetime.strptime(date_response.get("output"), "%Y-%m-%d").date()
+            analysis_date = datetime.strptime(
+                date_response.get("output"), "%Y-%m-%d"
+            ).date()
         except ValueError:
             await cl.Message(
                 content="Invalid date format. Using today's date instead."
@@ -82,7 +86,9 @@ Let's configure your analysis session.
         actions=[
             cl.Action(name="openai", value="openai", label="🤖 OpenAI (GPT)"),
             cl.Action(name="google", value="google", label="🔍 Google (Gemini)"),
-            cl.Action(name="anthropic", value="anthropic", label="🎨 Anthropic (Claude)"),
+            cl.Action(
+                name="anthropic", value="anthropic", label="🎨 Anthropic (Claude)"
+            ),
             cl.Action(name="xai", value="xai", label="🚀 xAI (Grok)"),
             cl.Action(name="openrouter", value="openrouter", label="🌐 OpenRouter"),
             cl.Action(name="ollama", value="ollama", label="🦙 Ollama (Local)"),
@@ -93,8 +99,7 @@ Let's configure your analysis session.
 
     # Ask for debate rounds
     rounds_response = await cl.AskUserMessage(
-        content="How many debate rounds would you like? (1-5, default: 1):",
-        timeout=60
+        content="How many debate rounds would you like? (1-5, default: 1):", timeout=60
     ).send()
 
     try:
@@ -134,7 +139,9 @@ async def on_message(message: cl.Message):
     if content == "run" or "start" in content or "analyze" in content:
         await run_analysis()
     elif content == "reset":
-        await cl.Message(content="Resetting session. Starting new configuration...").send()
+        await cl.Message(
+            content="Resetting session. Starting new configuration..."
+        ).send()
         await on_chat_start()
     elif content == "help":
         await show_help()
@@ -236,7 +243,9 @@ Initializing TradingAgents graph...
         ta = TradingAgentsGraph(debug=True, config=config)
 
         # Run analysis
-        await cl.Message(content="Running analysis... This may take a few minutes.").send()
+        await cl.Message(
+            content="Running analysis... This may take a few minutes."
+        ).send()
 
         result, decision = ta.propagate(str(ticker), str(analysis_date))
 

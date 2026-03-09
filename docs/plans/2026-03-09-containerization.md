@@ -65,6 +65,7 @@ load_dotenv()
 
 config = DEFAULT_CONFIG.copy()
 
+
 @cl.on_chat_start
 async def start():
     msg = cl.Message(content="Welcome to TradingAgents Web UI!")
@@ -93,18 +94,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 async def get_config():
     """Get configuration from user input"""
     ticker = await cl.AskUserMessage(
-        content="Enter stock ticker (e.g., NVDA)",
-        timeout=300
+        content="Enter stock ticker (e.g., NVDA)", timeout=300
     ).send()
-    
+
     date = await cl.AskUserMessage(
-        content="Enter analysis date (YYYY-MM-DD)",
-        timeout=300
+        content="Enter analysis date (YYYY-MM-DD)", timeout=300
     ).send()
-    
+
     provider = await cl.AskOptionMessage(
         content="Select LLM provider",
         options=[
@@ -115,23 +115,24 @@ async def get_config():
             cl.Option("openrouter", "OpenRouter"),
             cl.Option("ollama", "Ollama (local)"),
         ],
-        timeout=300
+        timeout=300,
     ).send()
-    
+
     config = DEFAULT_CONFIG.copy()
     config["llm_provider"] = provider.get("value")
-    
+
     return {
         "ticker": ticker.get("output"),
         "date": date.get("output"),
-        "config": config
+        "config": config,
     }
+
 
 @cl.on_message
 async def main(message: cl.Message):
     """Main analysis handler"""
     config_data = await get_config()
-    
+
     # Show configuration
     await cl.Message(
         content=f"**Configuration:**\n"
@@ -139,33 +140,28 @@ async def main(message: cl.Message):
         f"- Date: {config_data['date']}\n"
         f"- Provider: {config_data['config']['llm_provider']}"
     ).send()
-    
+
     # Create graph
     ta = TradingAgentsGraph(debug=False, config=config_data["config"])
-    
+
     # Run analysis
     with cl.Step(name="Running analysis") as step:
         try:
-            result, decision = ta.propagate(
-                config_data["ticker"],
-                config_data["date"]
-            )
+            result, decision = ta.propagate(config_data["ticker"], config_data["date"])
             step.output = "Analysis complete!"
         except Exception as e:
             step.output = f"Error: {str(e)}"
             await cl.Message(content=f"Error: {str(e)}").send()
             return
-    
+
     # Display results
-    await cl.Message(
-        content=f"**Decision:** {decision}"
-    ).send()
+    await cl.Message(content=f"**Decision:** {decision}").send()
+
 
 @cl.on_chat_start
 async def start():
     msg = cl.Message(
-        content="# TradingAgents Web UI\n\n"
-        "Enter a stock ticker to start analysis."
+        content="# TradingAgents Web UI\n\nEnter a stock ticker to start analysis."
     )
     await msg.send()
 ```

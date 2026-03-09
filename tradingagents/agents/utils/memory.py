@@ -75,7 +75,9 @@ class FinancialSituationMemory:
         scores = self.bm25.get_scores(query_tokens)
 
         # Get top-n indices sorted by score (descending)
-        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n_matches]
+        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[
+            :n_matches
+        ]
 
         # Build results
         results = []
