@@ -105,15 +105,9 @@ git clone https://github.com/TauricResearch/TradingAgents.git
 cd TradingAgents
 ```
 
-Create a virtual environment in any of your favorite environment managers:
+Install dependencies using uv:
 ```bash
-conda create -n tradingagents python=3.13
-conda activate tradingagents
-```
-
-Install dependencies:
-```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ### Required APIs
