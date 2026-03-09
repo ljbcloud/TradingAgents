@@ -1,5 +1,6 @@
 from .alpha_vantage_common import _make_api_request
 
+
 def get_indicator(
     symbol: str,
     indicator: str,
@@ -25,6 +26,7 @@ def get_indicator(
         String containing indicator values and description
     """
     from datetime import datetime
+
     from dateutil.relativedelta import relativedelta
 
     supported_indicators = {
@@ -98,21 +100,7 @@ def get_indicator(
                 "series_type": series_type,
                 "datatype": "csv"
             })
-        elif indicator == "macd":
-            data = _make_api_request("MACD", {
-                "symbol": symbol,
-                "interval": interval,
-                "series_type": series_type,
-                "datatype": "csv"
-            })
-        elif indicator == "macds":
-            data = _make_api_request("MACD", {
-                "symbol": symbol,
-                "interval": interval,
-                "series_type": series_type,
-                "datatype": "csv"
-            })
-        elif indicator == "macdh":
+        elif indicator == "macd" or indicator == "macds" or indicator == "macdh":
             data = _make_api_request("MACD", {
                 "symbol": symbol,
                 "interval": interval,
@@ -150,14 +138,14 @@ def get_indicator(
             return f"Error: Indicator {indicator} not implemented yet."
 
         # Parse CSV data and extract values for the date range
-        lines = data.strip().split('\n')
+        lines = data.strip().split("\n")
         if len(lines) < 2:
             return f"Error: No data returned for {indicator}"
 
         # Parse header and data
-        header = [col.strip() for col in lines[0].split(',')]
+        header = [col.strip() for col in lines[0].split(",")]
         try:
-            date_col_idx = header.index('time')
+            date_col_idx = header.index("time")
         except ValueError:
             return f"Error: 'time' column not found in data for {indicator}. Available columns: {header}"
 
@@ -184,7 +172,7 @@ def get_indicator(
         for line in lines[1:]:
             if not line.strip():
                 continue
-            values = line.split(',')
+            values = line.split(",")
             if len(values) > value_col_idx:
                 try:
                     date_str = values[date_col_idx].strip()
@@ -219,4 +207,4 @@ def get_indicator(
 
     except Exception as e:
         print(f"Error getting Alpha Vantage indicator data for {indicator}: {e}")
-        return f"Error retrieving {indicator} data: {str(e)}"
+        return f"Error retrieving {indicator} data: {e!s}"

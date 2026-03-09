@@ -1,11 +1,12 @@
-import chainlit as cl
+import os
 from datetime import datetime
 from typing import Optional
-import os
 
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.default_config import DEFAULT_CONFIG
+import chainlit as cl
 from dotenv import load_dotenv
+
+from tradingagents.default_config import DEFAULT_CONFIG
+from tradingagents.graph.trading_graph import TradingAgentsGraph
 
 load_dotenv()
 
@@ -60,10 +61,10 @@ Let's configure your analysis session.
 
     # Ask for date
     date_response = await cl.AskUserMessage(
-        content=f"Enter the analysis date (format: YYYY-MM-DD) or press Enter for today:",
+        content="Enter the analysis date (format: YYYY-MM-DD) or press Enter for today:",
         timeout=60
     ).send()
-    
+
     if date_response.get("output").strip():
         try:
             analysis_date = datetime.strptime(date_response.get("output"), "%Y-%m-%d").date()
@@ -87,7 +88,7 @@ Let's configure your analysis session.
             cl.Action(name="ollama", value="ollama", label="🦙 Ollama (Local)"),
         ],
     ).send()
-    
+
     llm_provider = llm_choice.get("value")
 
     # Ask for debate rounds
@@ -95,7 +96,7 @@ Let's configure your analysis session.
         content="How many debate rounds would you like? (1-5, default: 1):",
         timeout=60
     ).send()
-    
+
     try:
         max_debate_rounds = int(rounds_response.get("output"))
         if not 1 <= max_debate_rounds <= 5:
@@ -269,7 +270,7 @@ The analysis is complete! You can:
 ❌ **Error during analysis:**
 
 ```
-{str(e)}
+{e!s}
 ```
 
 Please check your API keys and configuration, then try again or type `reset` to reconfigure.

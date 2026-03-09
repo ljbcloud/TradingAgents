@@ -1,6 +1,7 @@
-from langchain_core.messages import AIMessage
-import time
 import json
+import time
+
+from langchain_core.messages import AIMessage
 
 
 def create_bear_researcher(llm, memory):

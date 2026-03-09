@@ -9,7 +9,7 @@ from .validators import validate_model
 class AnthropicClient(BaseLLMClient):
     """Client for Anthropic Claude models."""
 
-    def __init__(self, model: str, base_url: Optional[str] = None, **kwargs):
+    def __init__(self, model: str, base_url: str | None = None, **kwargs):
         super().__init__(model, base_url, **kwargs)
 
     def get_llm(self) -> Any:

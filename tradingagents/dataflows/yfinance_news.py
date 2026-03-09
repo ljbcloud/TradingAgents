@@ -1,7 +1,8 @@
 """yfinance-based news data fetching functions."""
 
-import yfinance as yf
 from datetime import datetime
+
+import yfinance as yf
 from dateutil.relativedelta import relativedelta
 
 
@@ -35,15 +36,14 @@ def _extract_article_data(article: dict) -> dict:
             "link": link,
             "pub_date": pub_date,
         }
-    else:
-        # Fallback for flat structure
-        return {
-            "title": article.get("title", "No title"),
-            "summary": article.get("summary", ""),
-            "publisher": article.get("publisher", "Unknown"),
-            "link": article.get("link", ""),
-            "pub_date": None,
-        }
+    # Fallback for flat structure
+    return {
+        "title": article.get("title", "No title"),
+        "summary": article.get("summary", ""),
+        "publisher": article.get("publisher", "Unknown"),
+        "link": article.get("link", ""),
+        "pub_date": None,
+    }
 
 
 def get_news_yfinance(
@@ -99,7 +99,7 @@ def get_news_yfinance(
         return f"## {ticker} News, from {start_date} to {end_date}:\n\n{news_str}"
 
     except Exception as e:
-        return f"Error fetching news for {ticker}: {str(e)}"
+        return f"Error fetching news for {ticker}: {e!s}"
 
 
 def get_global_news_yfinance(
@@ -187,4 +187,4 @@ def get_global_news_yfinance(
         return f"## Global Market News, from {start_date} to {curr_date}:\n\n{news_str}"
 
     except Exception as e:
-        return f"Error fetching global news: {str(e)}"
+        return f"Error fetching global news: {e!s}"

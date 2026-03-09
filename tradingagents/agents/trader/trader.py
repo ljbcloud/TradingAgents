@@ -1,6 +1,6 @@
 import functools
-import time
 import json
+import time
 
 
 def create_trader(llm, memory):

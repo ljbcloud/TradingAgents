@@ -1,8 +1,11 @@
+import os
+import pathlib
+from typing import Annotated
+
 import pandas as pd
 import yfinance as yf
 from stockstats import wrap
-from typing import Annotated
-import os
+
 from .config import get_config
 
 
@@ -28,14 +31,14 @@ class StockstatsUtils:
         end_date_str = end_date.strftime("%Y-%m-%d")
 
         # Ensure cache directory exists
-        os.makedirs(config["data_cache_dir"], exist_ok=True)
+        pathlib.Path(config["data_cache_dir"]).mkdir(exist_ok=True, parents=True)
 
         data_file = os.path.join(
             config["data_cache_dir"],
             f"{symbol}-YFin-data-{start_date_str}-{end_date_str}.csv",
         )
 
-        if os.path.exists(data_file):
+        if pathlib.Path(data_file).exists():
             data = pd.read_csv(data_file)
             data["Date"] = pd.to_datetime(data["Date"])
         else:
@@ -60,5 +63,4 @@ class StockstatsUtils:
         if not matching_rows.empty:
             indicator_value = matching_rows[indicator].values[0]
             return indicator_value
-        else:
-            return "N/A: Not a trading day (weekend or holiday)"
+        return "N/A: Not a trading day (weekend or holiday)"

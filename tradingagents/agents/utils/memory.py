@@ -4,9 +4,10 @@ Uses BM25 (Best Matching 25) algorithm for retrieval - no API calls,
 no token limits, works offline with any LLM provider.
 """
 
-from rank_bm25 import BM25Okapi
-from typing import List, Tuple
 import re
+from typing import List, Tuple
+
+from rank_bm25 import BM25Okapi
 
 
 class FinancialSituationMemory:
@@ -20,17 +21,17 @@ class FinancialSituationMemory:
             config: Configuration dict (kept for API compatibility, not used for BM25)
         """
         self.name = name
-        self.documents: List[str] = []
-        self.recommendations: List[str] = []
+        self.documents: list[str] = []
+        self.recommendations: list[str] = []
         self.bm25 = None
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         """Tokenize text for BM25 indexing.
 
         Simple whitespace + punctuation tokenization with lowercasing.
         """
         # Lowercase and split on non-alphanumeric characters
-        tokens = re.findall(r'\b\w+\b', text.lower())
+        tokens = re.findall(r"\b\w+\b", text.lower())
         return tokens
 
     def _rebuild_index(self):
@@ -41,7 +42,7 @@ class FinancialSituationMemory:
         else:
             self.bm25 = None
 
-    def add_situations(self, situations_and_advice: List[Tuple[str, str]]):
+    def add_situations(self, situations_and_advice: list[tuple[str, str]]):
         """Add financial situations and their corresponding advice.
 
         Args:
@@ -54,7 +55,7 @@ class FinancialSituationMemory:
         # Rebuild BM25 index with new documents
         self._rebuild_index()
 
-    def get_memories(self, current_situation: str, n_matches: int = 1) -> List[dict]:
+    def get_memories(self, current_situation: str, n_matches: int = 1) -> list[dict]:
         """Find matching recommendations using BM25 similarity.
 
         Args:
@@ -141,4 +142,4 @@ if __name__ == "__main__":
             print(f"Recommendation: {rec['recommendation']}")
 
     except Exception as e:
-        print(f"Error during recommendation: {str(e)}")
+        print(f"Error during recommendation: {e!s}")
