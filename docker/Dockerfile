@@ -1,4 +1,4 @@
-FROM docker.io/continuumio/miniconda3:latest
+FROM python:3.13-slim
 
 # Set working directory
 WORKDIR /app
@@ -8,19 +8,18 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc \
     g++ \
+    libxml2-dev \
+    libxslt-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv
+RUN pip install uv
+
 # Copy dependency files
-COPY pyproject.toml requirements.txt uv.lock ./
+COPY pyproject.toml uv.lock ./
 
-# Create conda environment with Python 3.13
-SHELL ["/bin/bash", "-c"]
-RUN conda create -n tradingagents python=3.13 -y && \
-    echo "source /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
-    echo "conda activate tradingagents" >> ~/.bashrc
-
-# Install Python dependencies
-RUN /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate tradingagents && pip install --no-cache-dir -r requirements.txt"
+# Install Python dependencies using uv
+RUN uv sync --frozen
 
 # Copy application code
 COPY . /app
@@ -34,7 +33,6 @@ USER appuser
 WORKDIR /app
 
 # Set environment variables
-ENV PATH="/opt/conda/envs/tradingagents/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
 # Copy entrypoint script
