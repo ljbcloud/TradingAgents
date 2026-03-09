@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "tradingagents"
@@ -36,5 +36,5 @@ dependencies = [
 [project.scripts]
 tradingagents = "cli.main:app"
 
-[tool.setuptools.packages.find]
-include = ["tradingagents*", "cli*"]
+[tool.hatch.build.targets.wheel]
+packages = ["tradingagents", "cli"]
