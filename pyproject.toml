@@ -32,6 +32,11 @@ dependencies = [
     "yfinance>=0.2.63",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.9.0",
+]
+
 [project.scripts]
 tradingagents = "cli.main:app"
 
