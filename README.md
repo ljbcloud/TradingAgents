@@ -278,7 +278,7 @@ ports:
 
 The Docker Compose setup includes:
 
-- **app** - TradingAgents application (multi-stage build with Python 3.13 + Conda)
+- **app** - TradingAgents application (multi-stage build with Python 3.13 + uv)
 - **redis** - Redis 7.2 Alpine for caching and state management
 
 ## TradingAgents Package
