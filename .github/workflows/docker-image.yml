@@ -31,7 +31,7 @@ jobs:
     
     - name: Test Docker image
       run: |
-        docker run --rm tradingagents:${{ github.sha }} python -c "import tradingagents; print('Import successful')"
+        docker run --rm tradingagents:${{ github.sha }} uv run python -c "import tradingagents; print('Import successful')"
     
     - name: Push Docker image (optional)
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
