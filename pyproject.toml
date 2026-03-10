@@ -43,3 +43,7 @@ tradingagents = "cli.main:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["tradingagents", "cli"]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv"]
+skips = ["B101", "B601"]
