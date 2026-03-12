@@ -137,4 +137,6 @@ unfixable = [
 
 [tool.ruff.lint.per-file-ignores]
 "tradingagents/**/*.py" = ["PD901"]
+"tradingagents/agents/utils/agent_utils.py" = ["F401"]
+"tradingagents/dataflows/alpha_vantage.py" = ["F401"]
 "cli/**/*.py" = ["PD901"]
