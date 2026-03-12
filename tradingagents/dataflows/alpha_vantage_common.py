@@ -13,7 +13,8 @@ def get_api_key() -> str:
     """Retrieve the API key for Alpha Vantage from environment variables."""
     api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
     if not api_key:
-        raise ValueError("ALPHA_VANTAGE_API_KEY environment variable is not set.")
+        msg = "ALPHA_VANTAGE_API_KEY environment variable is not set."
+        raise ValueError(msg)
     return api_key
 
 
@@ -32,13 +33,13 @@ def format_datetime_for_api(date_input) -> str:
                 dt = datetime.strptime(date_input, "%Y-%m-%d %H:%M")
                 return dt.strftime("%Y%m%dT%H%M")
             except ValueError:
-                raise ValueError(f"Unsupported date format: {date_input}")
+                msg = f"Unsupported date format: {date_input}"
+                raise ValueError(msg)
     elif isinstance(date_input, datetime):
         return date_input.strftime("%Y%m%dT%H%M")
     else:
-        raise ValueError(
-            f"Date must be string or datetime object, got {type(date_input)}"
-        )
+        msg = f"Date must be string or datetime object, got {type(date_input)}"
+        raise ValueError(msg)
 
 
 class AlphaVantageRateLimitError(Exception):
@@ -69,7 +70,7 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
         # Remove entitlement if it's None or empty
         api_params.pop("entitlement", None)
 
-    response = requests.get(API_BASE_URL, params=api_params)
+    response = requests.get(API_BASE_URL, params=api_params, timeout=30)
     response.raise_for_status()
 
     response_text = response.text
@@ -84,9 +85,8 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
                 "rate limit" in info_message.lower()
                 or "api key" in info_message.lower()
             ):
-                raise AlphaVantageRateLimitError(
-                    f"Alpha Vantage rate limit exceeded: {info_message}"
-                )
+                msg = f"Alpha Vantage rate limit exceeded: {info_message}"
+                raise AlphaVantageRateLimitError(msg)
     except json.JSONDecodeError:
         # Response is not JSON (likely CSV data), which is normal
         pass
@@ -127,6 +127,5 @@ def _filter_csv_by_date_range(csv_data: str, start_date: str, end_date: str) -> 
         return filtered_df.to_csv(index=False)
 
     except Exception as e:
-        # If filtering fails, return original data with a warning
-        print(f"Warning: Failed to filter CSV data by date range: {e}")
+        print(f"Warning: Failed to filter CSV data by date range: {e}")  # noqa: T201
         return csv_data

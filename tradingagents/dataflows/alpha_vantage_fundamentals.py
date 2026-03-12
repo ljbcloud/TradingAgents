@@ -1,7 +1,7 @@
 from .alpha_vantage_common import _make_api_request
 
 
-def get_fundamentals(ticker: str, curr_date: str = None) -> str:
+def get_fundamentals(ticker: str, curr_date: str | None = None) -> str:
     """
     Retrieve comprehensive fundamental data for a given ticker symbol using Alpha Vantage.
 
@@ -20,7 +20,7 @@ def get_fundamentals(ticker: str, curr_date: str = None) -> str:
 
 
 def get_balance_sheet(
-    ticker: str, freq: str = "quarterly", curr_date: str = None
+    ticker: str, freq: str = "quarterly", curr_date: str | None = None
 ) -> str:
     """
     Retrieve balance sheet data for a given ticker symbol using Alpha Vantage.
@@ -40,7 +40,9 @@ def get_balance_sheet(
     return _make_api_request("BALANCE_SHEET", params)
 
 
-def get_cashflow(ticker: str, freq: str = "quarterly", curr_date: str = None) -> str:
+def get_cashflow(
+    ticker: str, freq: str = "quarterly", curr_date: str | None = None
+) -> str:
     """
     Retrieve cash flow statement data for a given ticker symbol using Alpha Vantage.
 
@@ -60,7 +62,7 @@ def get_cashflow(ticker: str, freq: str = "quarterly", curr_date: str = None) ->
 
 
 def get_income_statement(
-    ticker: str, freq: str = "quarterly", curr_date: str = None
+    ticker: str, freq: str = "quarterly", curr_date: str | None = None
 ) -> str:
     """
     Retrieve income statement data for a given ticker symbol using Alpha Vantage.

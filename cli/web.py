@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from typing import Optional
 
 import chainlit as cl
 from dotenv import load_dotenv
@@ -11,6 +10,8 @@ from tradingagents.graph.trading_graph import TradingAgentsGraph
 load_dotenv()
 
 cl.instrument_openai()
+
+MAX_DEBATE_ROUNDS = 5
 
 
 @cl.on_chat_start
@@ -63,22 +64,24 @@ Let's configure your analysis session.
 
     # Ask for date
     date_response = await cl.AskUserMessage(
-        content="Enter the analysis date (format: YYYY-MM-DD) or press Enter for today:",
+        content=("Enter analysis date (format: YYYY-MM-DD) or press Enter for today:"),
         timeout=60,
     ).send()
 
     if date_response.get("output").strip():
         try:
-            analysis_date = datetime.strptime(
-                date_response.get("output"), "%Y-%m-%d"
-            ).date()
+            analysis_date = (
+                datetime.strptime(date_response.get("output"), "%Y-%m-%d")
+                .replace(tzinfo=datetime.timezone.utc)
+                .date()
+            )
         except ValueError:
             await cl.Message(
                 content="Invalid date format. Using today's date instead."
             ).send()
-            analysis_date = datetime.now().date()
+            analysis_date = datetime.now(tz=datetime.timezone.utc).date()
     else:
-        analysis_date = datetime.now().date()
+        analysis_date = datetime.now(tz=datetime.timezone.utc).date()
 
     # Ask for LLM provider
     llm_choice = await cl.AskActionMessage(
@@ -104,7 +107,7 @@ Let's configure your analysis session.
 
     try:
         max_debate_rounds = int(rounds_response.get("output"))
-        if not 1 <= max_debate_rounds <= 5:
+        if not 1 <= max_debate_rounds <= MAX_DEBATE_ROUNDS:
             max_debate_rounds = 1
     except (ValueError, TypeError):
         max_debate_rounds = 1
@@ -163,28 +166,25 @@ async def show_help():
     Display help information.
     """
     help_msg = cl.Message(
-        content="""
-# TradingAgents Web UI Help
-
-## Commands
-
-- **run** or **start**: Run the trading analysis with current configuration
-- **reset**: Reset the session and reconfigure
-- **help**: Show this help message
-
-## Configuration
-
-You can also ask me to change specific settings:
-- "Change ticker to NVDA"
-- "Use OpenAI provider"
-- "Set debate rounds to 3"
-
-## About
-
-TradingAgents uses multiple specialized AI agents to analyze financial data and make trading decisions. Each agent provides unique insights that are synthesized to form a comprehensive trading recommendation.
-
-**⚠️ Disclaimer**: This framework is designed for research purposes only. It is not intended as financial, investment, or trading advice. Always do your own research before making investment decisions.
-"""
+        content=(
+            "# TradingAgents Web UI Help\n\n"
+            "## Commands\n\n"
+            "- **run** or **start**: Run the trading analysis with current configuration\n"
+            "- **reset**: Reset the session and reconfigure\n"
+            "- **help**: Show this help message\n\n"
+            "## Configuration\n\n"
+            "You can also ask me to change specific settings:\n"
+            '- "Change ticker to NVDA"\n'
+            '- "Use OpenAI provider"\n'
+            '- "Set debate rounds to 3"\n\n'
+            "## About\n\n"
+            "TradingAgents uses multiple specialized AI agents to analyze financial data\n"
+            "and make trading decisions. Each agent provides unique insights that are\n"
+            "synthesized to form a comprehensive trading recommendation.\n\n"
+            "**⚠️ Disclaimer**: This framework is designed for research purposes only.\n"
+            "It is not intended as financial, investment, or trading advice. Always do\n"
+            "your own research before making investment decisions."
+        )
     )
     await help_msg.send()
 
@@ -211,9 +211,11 @@ async def run_analysis():
         api_key = os.getenv(required_keys[llm_provider])
         if not api_key:
             await cl.Message(
-                content=f"""❌ Error: {required_keys[llm_provider]} not found in environment variables.
-
-Please set the required API key before running the analysis."""
+                content=(
+                    f"❌ Error: {required_keys[llm_provider]} not found "
+                    "in environment variables.\n\n"
+                    "Please set the required API key before running analysis."
+                ),
             ).send()
             return
 
@@ -273,7 +275,7 @@ The analysis is complete! You can:
 """
         ).send()
 
-    except Exception as e:
+    except (ValueError, RuntimeError, OSError) as e:
         error_msg = cl.Message(
             content=f"""
 ❌ **Error during analysis:**
@@ -282,7 +284,8 @@ The analysis is complete! You can:
 {e!s}
 ```
 
-Please check your API keys and configuration, then try again or type `reset` to reconfigure.
+Please check your API keys and configuration, then try again
+or type `reset` to reconfigure.
 """
         )
         await error_msg.send()

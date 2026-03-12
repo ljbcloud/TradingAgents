@@ -5,7 +5,6 @@ no token limits, works offline with any LLM provider.
 """
 
 import re
-from typing import List, Tuple
 
 from rank_bm25 import BM25Okapi
 
@@ -13,7 +12,7 @@ from rank_bm25 import BM25Okapi
 class FinancialSituationMemory:
     """Memory system for storing and retrieving financial situations using BM25."""
 
-    def __init__(self, name: str, config: dict = None):
+    def __init__(self, name: str, config: dict | None = None):
         """Initialize the memory system.
 
         Args:
@@ -31,8 +30,7 @@ class FinancialSituationMemory:
         Simple whitespace + punctuation tokenization with lowercasing.
         """
         # Lowercase and split on non-alphanumeric characters
-        tokens = re.findall(r"\b\w+\b", text.lower())
-        return tokens
+        return re.findall(r"\b\w+\b", text.lower())
 
     def _rebuild_index(self):
         """Rebuild the BM25 index after adding documents."""
@@ -137,11 +135,8 @@ if __name__ == "__main__":
     try:
         recommendations = matcher.get_memories(current_situation, n_matches=2)
 
-        for i, rec in enumerate(recommendations, 1):
-            print(f"\nMatch {i}:")
-            print(f"Similarity Score: {rec['similarity_score']:.2f}")
-            print(f"Matched Situation: {rec['matched_situation']}")
-            print(f"Recommendation: {rec['recommendation']}")
+        for _rec in recommendations:
+            pass
 
-    except Exception as e:
-        print(f"Error during recommendation: {e!s}")
+    except Exception:
+        pass

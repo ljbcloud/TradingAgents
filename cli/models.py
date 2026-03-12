@@ -1,7 +1,4 @@
 from enum import Enum
-from typing import Dict, List, Optional
-
-from pydantic import BaseModel
 
 
 class AnalystType(str, Enum):

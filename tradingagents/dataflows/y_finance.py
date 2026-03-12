@@ -14,7 +14,6 @@ def get_YFin_data_online(
     start_date: Annotated[str, "Start date in yyyy-mm-dd format"],
     end_date: Annotated[str, "End date in yyyy-mm-dd format"],
 ):
-
     datetime.strptime(start_date, "%Y-%m-%d")
     datetime.strptime(end_date, "%Y-%m-%d")
 
@@ -59,7 +58,6 @@ def get_stock_stats_indicators_window(
     ],
     look_back_days: Annotated[int, "how many days to look back"],
 ) -> str:
-
     best_ind_params = {
         # Moving Averages
         "close_50_sma": (
@@ -134,9 +132,8 @@ def get_stock_stats_indicators_window(
     }
 
     if indicator not in best_ind_params:
-        raise ValueError(
-            f"Indicator {indicator} is not supported. Please choose from: {list(best_ind_params.keys())}"
-        )
+        msg = f"Indicator {indicator} is not supported. Please choose from: {list(best_ind_params.keys())}"
+        raise ValueError(msg)
 
     end_date = curr_date
     curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
@@ -160,15 +157,14 @@ def get_stock_stats_indicators_window(
                 indicator_value = "N/A: Not a trading day (weekend or holiday)"
 
             date_values.append((date_str, indicator_value))
-            current_dt = current_dt - relativedelta(days=1)
+            current_dt -= relativedelta(days=1)
 
         # Build the result string
         ind_string = ""
         for date_str, value in date_values:
             ind_string += f"{date_str}: {value}\n"
 
-    except Exception as e:
-        print(f"Error getting bulk stockstats data: {e}")
+    except Exception:
         # Fallback to original implementation if bulk method fails
         ind_string = ""
         curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
@@ -177,16 +173,14 @@ def get_stock_stats_indicators_window(
                 symbol, indicator, curr_date_dt.strftime("%Y-%m-%d")
             )
             ind_string += f"{curr_date_dt.strftime('%Y-%m-%d')}: {indicator_value}\n"
-            curr_date_dt = curr_date_dt - relativedelta(days=1)
+            curr_date_dt -= relativedelta(days=1)
 
-    result_str = (
+    return (
         f"## {indicator} values from {before.strftime('%Y-%m-%d')} to {end_date}:\n\n"
         + ind_string
         + "\n\n"
         + best_ind_params.get(indicator, "No description available.")
     )
-
-    return result_str
 
 
 def _get_stock_stats_bulk(
@@ -218,11 +212,12 @@ def _get_stock_stats_bulk(
             )
             df = wrap(data)
         except FileNotFoundError:
-            raise Exception("Stockstats fail: Yahoo Finance data not fetched yet!")
+            msg = "Stockstats fail: Yahoo Finance data not fetched yet!"
+            raise Exception(msg)
     else:
         # Online data fetching with caching
         today_date = pd.Timestamp.today()
-        curr_date_dt = pd.to_datetime(curr_date)
+        pd.to_datetime(curr_date)
 
         end_date = today_date
         start_date = today_date - pd.DateOffset(years=15)
@@ -279,7 +274,6 @@ def get_stockstats_indicator(
         str, "The current trading date you are trading on, YYYY-mm-dd"
     ],
 ) -> str:
-
     curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
     curr_date = curr_date_dt.strftime("%Y-%m-%d")
 
@@ -289,10 +283,7 @@ def get_stockstats_indicator(
             indicator,
             curr_date,
         )
-    except Exception as e:
-        print(
-            f"Error getting stockstats indicator data for indicator {indicator} on {curr_date}: {e}"
-        )
+    except Exception:
         return ""
 
     return str(indicator_value)
@@ -300,7 +291,7 @@ def get_stockstats_indicator(
 
 def get_fundamentals(
     ticker: Annotated[str, "ticker symbol of the company"],
-    curr_date: Annotated[str, "current date (not used for yfinance)"] = None,
+    curr_date: Annotated[str | None, "current date (not used for yfinance)"] = None,
 ):
     """Get company fundamentals overview from yfinance."""
     try:
@@ -360,7 +351,7 @@ def get_fundamentals(
 def get_balance_sheet(
     ticker: Annotated[str, "ticker symbol of the company"],
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
-    curr_date: Annotated[str, "current date (not used for yfinance)"] = None,
+    curr_date: Annotated[str | None, "current date (not used for yfinance)"] = None,
 ):
     """Get balance sheet data from yfinance."""
     try:
@@ -392,7 +383,7 @@ def get_balance_sheet(
 def get_cashflow(
     ticker: Annotated[str, "ticker symbol of the company"],
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
-    curr_date: Annotated[str, "current date (not used for yfinance)"] = None,
+    curr_date: Annotated[str | None, "current date (not used for yfinance)"] = None,
 ):
     """Get cash flow data from yfinance."""
     try:
@@ -424,7 +415,7 @@ def get_cashflow(
 def get_income_statement(
     ticker: Annotated[str, "ticker symbol of the company"],
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
-    curr_date: Annotated[str, "current date (not used for yfinance)"] = None,
+    curr_date: Annotated[str | None, "current date (not used for yfinance)"] = None,
 ):
     """Get income statement data from yfinance."""
     try:

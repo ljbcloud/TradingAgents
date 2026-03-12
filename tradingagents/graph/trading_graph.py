@@ -2,18 +2,12 @@
 
 import json
 import os
-from datetime import date
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from langgraph.prebuilt import ToolNode
 
 from tradingagents.agents import *
-from tradingagents.agents.utils.agent_states import (
-    AgentState,
-    InvestDebateState,
-    RiskDebateState,
-)
 
 # Import the new abstract tool methods from agent_utils
 from tradingagents.agents.utils.agent_utils import (
@@ -44,9 +38,9 @@ class TradingAgentsGraph:
 
     def __init__(
         self,
-        selected_analysts=["market", "social", "news", "fundamentals"],
+        selected_analysts=None,
         debug=False,
-        config: dict[str, Any] = None,
+        config: dict[str, Any] | None = None,
         callbacks: list | None = None,
     ):
         """Initialize the trading agents graph and components.
@@ -57,6 +51,8 @@ class TradingAgentsGraph:
             config: Configuration dictionary. If None, uses default config
             callbacks: Optional list of callback handlers (e.g., for tracking LLM/tool stats)
         """
+        if selected_analysts is None:
+            selected_analysts = ["market", "social", "news", "fundamentals"]
         self.debug = debug
         self.config = config or DEFAULT_CONFIG
         self.callbacks = callbacks or []
@@ -254,7 +250,7 @@ class TradingAgentsGraph:
 
         with Path(
             f"eval_results/{self.ticker}/TradingAgentsStrategy_logs/full_states_log_{trade_date}.json"
-        ).open("w") as f:
+        ).open("w", encoding="utf-8") as f:
             json.dump(self.log_states_dict, f, indent=4)
 
     def reflect_and_remember(self, returns_losses):

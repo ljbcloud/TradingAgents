@@ -1,8 +1,13 @@
-from typing import Dict, List, Optional, Tuple
+import re
+import sys
+from datetime import datetime, timezone
 
 import questionary
+from rich.console import Console
 
 from cli.models import AnalystType
+
+console = Console()
 
 ANALYST_ORDER = [
     ("Market Analyst", AnalystType.MARKET),
@@ -13,7 +18,11 @@ ANALYST_ORDER = [
 
 
 def get_ticker() -> str:
-    """Prompt the user to enter a ticker symbol."""
+    """Prompt the user to enter a ticker symbol.
+
+    Returns:
+        str: The ticker symbol entered by the user, in uppercase.
+    """
     ticker = questionary.text(
         "Enter the ticker symbol to analyze:",
         validate=lambda x: len(x.strip()) > 0 or "Please enter a valid ticker symbol.",
@@ -25,24 +34,27 @@ def get_ticker() -> str:
 
     if not ticker:
         console.print("\n[red]No ticker symbol provided. Exiting...[/red]")
-        exit(1)
+        sys.exit(1)
 
     return ticker.strip().upper()
 
 
 def get_analysis_date() -> str:
-    """Prompt the user to enter a date in YYYY-MM-DD format."""
-    import re
-    from datetime import datetime
+    """Prompt the user to enter a date in YYYY-MM-DD format.
+
+    Returns:
+        str: The analysis date in YYYY-MM-DD format.
+    """
 
     def validate_date(date_str: str) -> bool:
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_str):
             return False
         try:
-            datetime.strptime(date_str, "%Y-%m-%d")
-            return True
+            datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         except ValueError:
             return False
+        else:
+            return True
 
     date = questionary.text(
         "Enter the analysis date (YYYY-MM-DD):",
@@ -58,19 +70,27 @@ def get_analysis_date() -> str:
 
     if not date:
         console.print("\n[red]No date provided. Exiting...[/red]")
-        exit(1)
+        sys.exit(1)
 
     return date.strip()
 
 
 def select_analysts() -> list[AnalystType]:
-    """Select analysts using an interactive checkbox."""
+    """Select analysts using an interactive checkbox.
+
+    Returns:
+        list[AnalystType]: List of selected analyst types.
+    """
     choices = questionary.checkbox(
         "Select Your [Analysts Team]:",
         choices=[
             questionary.Choice(display, value=value) for display, value in ANALYST_ORDER
         ],
-        instruction="\n- Press Space to select/unselect analysts\n- Press 'a' to select/unselect all\n- Press Enter when done",
+        instruction=(
+            "\n- Press Space to select/unselect analysts\n"
+            "- Press 'a' to select/unselect all\n"
+            "- Press Enter when done"
+        ),
         validate=lambda x: len(x) > 0 or "You must select at least one analyst.",
         style=questionary.Style([
             ("checkbox-selected", "fg:green"),
@@ -82,25 +102,38 @@ def select_analysts() -> list[AnalystType]:
 
     if not choices:
         console.print("\n[red]No analysts selected. Exiting...[/red]")
-        exit(1)
+        sys.exit(1)
 
     return choices
 
 
 def select_research_depth() -> int:
-    """Select research depth using an interactive selection."""
+    """Select research depth using an interactive selection.
+
+    Returns:
+        int: The selected research depth value.
+    """
 
     # Define research depth options with their corresponding values
-    DEPTH_OPTIONS = [
-        ("Shallow - Quick research, few debate and strategy discussion rounds", 1),
-        ("Medium - Middle ground, moderate debate rounds and strategy discussion", 3),
-        ("Deep - Comprehensive research, in depth debate and strategy discussion", 5),
+    depth_options = [
+        (
+            "Shallow - Quick research, few debate and strategy discussion rounds",
+            1,
+        ),
+        (
+            "Medium - Middle ground, moderate debate rounds and strategy discussion",
+            3,
+        ),
+        (
+            "Deep - Comprehensive research, in depth debate and strategy discussion",
+            5,
+        ),
     ]
 
     choice = questionary.select(
         "Select Your [Research Depth]:",
         choices=[
-            questionary.Choice(display, value=value) for display, value in DEPTH_OPTIONS
+            questionary.Choice(display, value=value) for display, value in depth_options
         ],
         instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
         style=questionary.Style([
@@ -112,16 +145,21 @@ def select_research_depth() -> int:
 
     if choice is None:
         console.print("\n[red]No research depth selected. Exiting...[/red]")
-        exit(1)
+        sys.exit(1)
 
     return choice
 
 
 def select_shallow_thinking_agent(provider) -> str:
-    """Select shallow thinking llm engine using an interactive selection."""
+    """Select shallow thinking llm engine using an interactive selection.
 
-    # Define shallow thinking llm engine options with their corresponding model names
-    SHALLOW_AGENT_OPTIONS = {
+    Returns:
+        str: The selected shallow thinking LLM engine model name.
+    """
+
+    # Define shallow thinking llm engine options with their corresponding model
+    # names
+    shallow_agent_options = {
         "openai": [
             ("GPT-5 Mini - Cost-optimized reasoning", "gpt-5-mini"),
             ("GPT-5 Nano - Ultra-fast, high-throughput", "gpt-5-nano"),
@@ -173,7 +211,7 @@ def select_shallow_thinking_agent(provider) -> str:
         "Select Your [Quick-Thinking LLM Engine]:",
         choices=[
             questionary.Choice(display, value=value)
-            for display, value in SHALLOW_AGENT_OPTIONS[provider.lower()]
+            for display, value in shallow_agent_options[provider.lower()]
         ],
         instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
         style=questionary.Style([
@@ -187,16 +225,21 @@ def select_shallow_thinking_agent(provider) -> str:
         console.print(
             "\n[red]No shallow thinking llm engine selected. Exiting...[/red]"
         )
-        exit(1)
+        sys.exit(1)
 
     return choice
 
 
 def select_deep_thinking_agent(provider) -> str:
-    """Select deep thinking llm engine using an interactive selection."""
+    """Select deep thinking llm engine using an interactive selection.
 
-    # Define deep thinking llm engine options with their corresponding model names
-    DEEP_AGENT_OPTIONS = {
+    Returns:
+        str: The selected deep thinking LLM engine model name.
+    """
+
+    # Define deep thinking llm engine options with their corresponding model
+    # names
+    deep_agent_options = {
         "openai": [
             ("GPT-5.2 - Latest flagship", "gpt-5.2"),
             ("GPT-5.1 - Flexible reasoning", "gpt-5.1"),
@@ -251,7 +294,7 @@ def select_deep_thinking_agent(provider) -> str:
         "Select Your [Deep-Thinking LLM Engine]:",
         choices=[
             questionary.Choice(display, value=value)
-            for display, value in DEEP_AGENT_OPTIONS[provider.lower()]
+            for display, value in deep_agent_options[provider.lower()]
         ],
         instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
         style=questionary.Style([
@@ -263,15 +306,19 @@ def select_deep_thinking_agent(provider) -> str:
 
     if choice is None:
         console.print("\n[red]No deep thinking llm engine selected. Exiting...[/red]")
-        exit(1)
+        sys.exit(1)
 
     return choice
 
 
 def select_llm_provider() -> tuple[str, str]:
-    """Select the OpenAI api url using interactive selection."""
+    """Select the OpenAI api url using interactive selection.
+
+    Returns:
+        tuple[str, str]: A tuple containing (display_name, url).
+    """
     # Define OpenAI api options with their corresponding endpoints
-    BASE_URLS = [
+    base_urls = [
         ("OpenAI", "https://api.openai.com/v1"),
         ("Google", "https://generativelanguage.googleapis.com/v1"),
         ("Anthropic", "https://api.anthropic.com/"),
@@ -284,7 +331,7 @@ def select_llm_provider() -> tuple[str, str]:
         "Select your LLM Provider:",
         choices=[
             questionary.Choice(display, value=(display, value))
-            for display, value in BASE_URLS
+            for display, value in base_urls
         ],
         instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
         style=questionary.Style([
@@ -296,16 +343,20 @@ def select_llm_provider() -> tuple[str, str]:
 
     if choice is None:
         console.print("\n[red]no OpenAI backend selected. Exiting...[/red]")
-        exit(1)
+        sys.exit(1)
 
     display_name, url = choice
-    print(f"You selected: {display_name}\tURL: {url}")
+    console.print(f"You selected: {display_name}\tURL: {url}")
 
     return display_name, url
 
 
 def ask_openai_reasoning_effort() -> str:
-    """Ask for OpenAI reasoning effort level."""
+    """Ask for OpenAI reasoning effort level.
+
+    Returns:
+        str: The selected reasoning effort level.
+    """
     choices = [
         questionary.Choice("Medium (Default)", "medium"),
         questionary.Choice("High (More thorough)", "high"),
@@ -325,8 +376,10 @@ def ask_openai_reasoning_effort() -> str:
 def ask_gemini_thinking_config() -> str | None:
     """Ask for Gemini thinking configuration.
 
-    Returns thinking_level: "high" or "minimal".
-    Client maps to appropriate API param based on model series.
+    Returns:
+        str | None: The thinking level ("high" or "minimal"), or None if
+            no selection was made. Client maps to appropriate API param based
+            on model series.
     """
     return questionary.select(
         "Select Thinking Mode:",

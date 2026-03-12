@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .anthropic_client import AnthropicClient
 from .base_client import BaseLLMClient
 from .google_client import GoogleClient
@@ -28,7 +26,7 @@ def create_llm_client(
     """
     provider_lower = provider.lower()
 
-    if provider_lower in ("openai", "ollama", "openrouter"):
+    if provider_lower in {"openai", "ollama", "openrouter"}:
         return OpenAIClient(model, base_url, provider=provider_lower, **kwargs)
 
     if provider_lower == "xai":
@@ -40,4 +38,5 @@ def create_llm_client(
     if provider_lower == "google":
         return GoogleClient(model, base_url, **kwargs)
 
-    raise ValueError(f"Unsupported LLM provider: {provider}")
+    msg = f"Unsupported LLM provider: {provider}"
+    raise ValueError(msg)

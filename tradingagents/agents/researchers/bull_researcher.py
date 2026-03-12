@@ -1,9 +1,3 @@
-import json
-import time
-
-from langchain_core.messages import AIMessage
-
-
 def create_bull_researcher(llm, memory):
     def bull_node(state) -> dict:
         investment_debate_state = state["investment_debate_state"]
@@ -20,7 +14,7 @@ def create_bull_researcher(llm, memory):
         past_memories = memory.get_memories(curr_situation, n_matches=2)
 
         past_memory_str = ""
-        for i, rec in enumerate(past_memories, 1):
+        for rec in past_memories:
             past_memory_str += rec["recommendation"] + "\n\n"
 
         prompt = f"""You are a Bull Analyst advocating for investing in the stock. Your task is to build a strong, evidence-based case emphasizing growth potential, competitive advantages, and positive market indicators. Leverage the provided research and data to address concerns and counter bearish arguments effectively.

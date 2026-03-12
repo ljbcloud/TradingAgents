@@ -1,5 +1,3 @@
-from typing import Dict, Optional
-
 from tradingagents import default_config
 
 # Use default config but allow it to be overridden

@@ -1,10 +1,13 @@
 import os
+import pathlib
 
 DEFAULT_CONFIG = {
-    "project_dir": os.path.abspath(os.path.join(os.path.dirname(__file__), ".")),
+    "project_dir": pathlib.Path(
+        os.path.join(pathlib.Path(__file__).parent, ".")
+    ).resolve(),
     "results_dir": os.getenv("TRADINGAGENTS_RESULTS_DIR", "./results"),
     "data_cache_dir": os.path.join(
-        os.path.abspath(os.path.join(os.path.dirname(__file__), ".")),
+        pathlib.Path(os.path.join(pathlib.Path(__file__).parent, ".")).resolve(),
         "dataflows/data_cache",
     ),
     # LLM settings

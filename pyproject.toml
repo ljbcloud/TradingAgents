@@ -36,6 +36,8 @@ dependencies = [
 dev = [
     "ruff>=0.9.0",
     "pre-commit>=4.0.0",
+    "bandit>=1.7.0",
+    "mypy>=1.0.0",
 ]
 
 [project.scripts]
@@ -46,4 +48,93 @@ packages = ["tradingagents", "cli"]
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv", "venv"]
-skips = ["B101", "B601"]
+skips = ["B101", "B601", "B110"]
+
+[tool.mypy]
+ignore_missing_imports = true
+python_version = "3.10"
+warn_return_any = false
+warn_unused_ignores = false
+disable_error_code = [
+    "arg-type",
+    "attr-defined",
+    "assignment",
+    "var-annotated",
+    "union-attr",
+    "return-value",
+    "import-untyped",
+    "misc",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "*.pyc",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+]
+preview = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "A002",  # shadowing builtins
+    "ARG001",  # unused function arguments
+    "ARG002",  # unused method arguments
+    "D",  # docstyle
+    "ANN",  # annotations
+    "DOC",  # docstring conventions
+    "ERA001",  # commented out code
+    "COM812",  # missing trailing comma
+    "ISC001",  # single line implicit string concatenation
+    "CPY001",  # missing copyright notice
+    "DTZ005",  # naive datetime.now
+    "DTZ007",  # naive datetime.strptime
+    "DTZ011",  # datetime.date.today used
+    "E501",  # line too long
+    "PTH118",  # os.path.join should use Path
+    "TRY002",  # create your own exception
+    "TRY004",  # prefer TypeError
+    "TRY300",  # move to else block
+    "B904",  # raise from in except
+    "FBT002",  # boolean default argument
+    "N802",  # function name should be lowercase
+    "PLR0911",  # too many return statements
+    "PLR0913",  # too many arguments
+    "PLR0917",  # too many positional arguments
+    "PLR2004",  # magic value in comparison
+    "PLW0603",  # global statement discouraged
+    "PLC0415",  # import at top-level
+    "PLC1901",  # can be simplified
+    "PD011",  # use .to_numpy()
+    "S110",  # try-except-pass
+    "C901",  # function too complex
+    "PLR0912",  # too many branches
+    "PLR0914",  # too many local variables
+    "PLR0915",  # too many statements
+    "PLR1702",  # too many nested blocks
+    "PLR6301",  # method could be function
+    "RUF012",  # mutable class attributes
+    "SLF001",  # private member access
+    "BLE001",  # blind exception
+    "F403",  # star imports (used in graph setup)
+    "F405",  # undefined names from star imports
+]
+unfixable = [
+    "F401",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tradingagents/**/*.py" = ["PD901"]
+"cli/**/*.py" = ["PD901"]

@@ -61,6 +61,5 @@ class StockstatsUtils:
         matching_rows = df[df["Date"].str.startswith(curr_date_str)]
 
         if not matching_rows.empty:
-            indicator_value = matching_rows[indicator].values[0]
-            return indicator_value
+            return matching_rows[indicator].values[0]
         return "N/A: Not a trading day (weekend or holiday)"

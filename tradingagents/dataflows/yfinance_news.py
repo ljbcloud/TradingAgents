@@ -1,5 +1,6 @@
 """yfinance-based news data fetching functions."""
 
+import contextlib
 from datetime import datetime
 
 import yfinance as yf
@@ -24,10 +25,8 @@ def _extract_article_data(article: dict) -> dict:
         pub_date_str = content.get("pubDate", "")
         pub_date = None
         if pub_date_str:
-            try:
+            with contextlib.suppress(ValueError, AttributeError):
                 pub_date = datetime.fromisoformat(pub_date_str.replace("Z", "+00:00"))
-            except (ValueError, AttributeError):
-                pass
 
         return {
             "title": title,

@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from .alpha_vantage import (
     get_balance_sheet as get_alpha_vantage_balance_sheet,
 )
@@ -138,10 +136,11 @@ def get_category_for_method(method: str) -> str:
     for category, info in TOOLS_CATEGORIES.items():
         if method in info["tools"]:
             return category
-    raise ValueError(f"Method '{method}' not found in any category")
+    msg = f"Method '{method}' not found in any category"
+    raise ValueError(msg)
 
 
-def get_vendor(category: str, method: str = None) -> str:
+def get_vendor(category: str, method: str | None = None) -> str:
     """Get the configured vendor for a data category or specific tool method.
     Tool-level configuration takes precedence over category-level.
     """
@@ -164,7 +163,8 @@ def route_to_vendor(method: str, *args, **kwargs):
     primary_vendors = [v.strip() for v in vendor_config.split(",")]
 
     if method not in VENDOR_METHODS:
-        raise ValueError(f"Method '{method}' not supported")
+        msg = f"Method '{method}' not supported"
+        raise ValueError(msg)
 
     # Build fallback chain: primary vendors first, then remaining available vendors
     all_available_vendors = list(VENDOR_METHODS[method].keys())
@@ -185,4 +185,5 @@ def route_to_vendor(method: str, *args, **kwargs):
         except AlphaVantageRateLimitError:
             continue  # Only rate limits trigger fallback
 
-    raise RuntimeError(f"No available vendor for '{method}'")
+    msg = f"No available vendor for '{method}'"
+    raise RuntimeError(msg)

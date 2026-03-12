@@ -1,3 +1,5 @@
+import operator
+
 from .alpha_vantage_common import _make_api_request
 
 
@@ -60,9 +62,8 @@ def get_indicator(
     }
 
     if indicator not in supported_indicators:
-        raise ValueError(
-            f"Indicator {indicator} is not supported. Please choose from: {list(supported_indicators.keys())}"
-        )
+        msg = f"Indicator {indicator} is not supported. Please choose from: {list(supported_indicators.keys())}"
+        raise ValueError(msg)
 
     curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
     before = curr_date_dt - relativedelta(days=look_back_days)
@@ -109,7 +110,7 @@ def get_indicator(
                     "datatype": "csv",
                 },
             )
-        elif indicator == "macd" or indicator == "macds" or indicator == "macdh":
+        elif indicator in {"macd", "macds", "macdh"}:
             data = _make_api_request(
                 "MACD",
                 {
@@ -130,7 +131,7 @@ def get_indicator(
                     "datatype": "csv",
                 },
             )
-        elif indicator in ["boll", "boll_ub", "boll_lb"]:
+        elif indicator in {"boll", "boll_ub", "boll_lb"}:
             data = _make_api_request(
                 "BBANDS",
                 {
@@ -215,7 +216,7 @@ def get_indicator(
                     continue
 
         # Sort by date and format output
-        result_data.sort(key=lambda x: x[0])
+        result_data.sort(key=operator.itemgetter(0))
 
         ind_string = ""
         for date_dt, value in result_data:
@@ -224,15 +225,12 @@ def get_indicator(
         if not ind_string:
             ind_string = "No data available for the specified date range.\n"
 
-        result_str = (
+        return (
             f"## {indicator.upper()} values from {before.strftime('%Y-%m-%d')} to {curr_date}:\n\n"
             + ind_string
             + "\n\n"
             + indicator_descriptions.get(indicator, "No description available.")
         )
 
-        return result_str
-
     except Exception as e:
-        print(f"Error getting Alpha Vantage indicator data for {indicator}: {e}")
         return f"Error retrieving {indicator} data: {e!s}"

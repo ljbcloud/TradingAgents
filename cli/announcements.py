@@ -7,8 +7,12 @@ from rich.panel import Panel
 from cli.config import CLI_CONFIG
 
 
-def fetch_announcements(url: str = None, timeout: float = None) -> dict:
-    """Fetch announcements from endpoint. Returns dict with announcements and settings."""
+def fetch_announcements(url: str | None = None, timeout: float | None = None) -> dict:
+    """Fetch announcements from endpoint.
+
+    Returns:
+        dict: Dictionary with 'announcements' list and 'require_attention' boolean.
+    """
     endpoint = url or CLI_CONFIG["announcements_url"]
     timeout = timeout or CLI_CONFIG["announcements_timeout"]
     fallback = CLI_CONFIG["announcements_fallback"]
@@ -21,7 +25,7 @@ def fetch_announcements(url: str = None, timeout: float = None) -> dict:
             "announcements": data.get("announcements", [fallback]),
             "require_attention": data.get("require_attention", False),
         }
-    except Exception:
+    except requests.RequestException:
         return {
             "announcements": [fallback],
             "require_attention": False,

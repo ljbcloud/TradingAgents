@@ -1,6 +1,4 @@
 import functools
-import json
-import time
 
 
 def create_trader(llm, memory):
@@ -17,7 +15,7 @@ def create_trader(llm, memory):
 
         past_memory_str = ""
         if past_memories:
-            for i, rec in enumerate(past_memories, 1):
+            for rec in past_memories:
                 past_memory_str += rec["recommendation"] + "\n\n"
         else:
             past_memory_str = "No past memories found."

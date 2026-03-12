@@ -73,7 +73,7 @@ def validate_model(provider: str, model: str) -> bool:
     """
     provider_lower = provider.lower()
 
-    if provider_lower in ("ollama", "openrouter"):
+    if provider_lower in {"ollama", "openrouter"}:
         return True
 
     if provider_lower not in VALID_MODELS:
