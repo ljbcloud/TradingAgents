@@ -2,6 +2,8 @@
 
 This file defines agent personas for working with documentation in the TradingAgents project.
 
+For project-level agent definitions, see `/AGENTS.md`.
+
 ---
 
 ## Docs Agent
@@ -20,6 +22,25 @@ I specialize in creating and maintaining documentation for the TradingAgents pro
 - docs/ contains verification notes and workflow documentation
 - Documentation should be clear, concise, and accurate
 - Use elements-of-style:writing-clearly-and-concisely patterns
+
+### Commands & Tools
+
+```bash
+# List documentation files
+ls docs/
+
+# Check existing plans
+ls docs/plans/
+
+# View recent design docs
+ls -lt docs/plans/ | head -10
+
+# Search for TODOs in documentation
+grep -r "TODO" docs/
+
+# Search for specific topics in docs
+grep -r "keyword" docs/
+```
 
 ### Standards & Conventions
 - Plan documents go in docs/plans/ with date prefix
