@@ -1,9 +1,3 @@
-# AGENTS.md
-
-This file defines agent personas for developing trading agents.
-
----
-
 ## Analyst Agent
 
 ---
