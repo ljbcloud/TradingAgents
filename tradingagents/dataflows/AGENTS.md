@@ -1,9 +1,3 @@
-# AGENTS.md
-
-This file defines agent personas for working with data pipelines.
-
----
-
 ## Data Vendor Agent
 
 ---
