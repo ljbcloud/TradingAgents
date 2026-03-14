@@ -1,25 +1,27 @@
-import pytest
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
+
+import pandas as pd
+import pytest
+
 from tradingagents.dataflows.utils import (
+    decorate_all_methods,
     get_current_date,
     get_next_weekday,
     save_output,
-    decorate_all_methods
 )
 
 
 def test_get_current_date_format():
     result = get_current_date()
     assert len(result) == 10
-    assert result[4] == '-'
-    assert result[7] == '-'
+    assert result[4] == "-"
+    assert result[7] == "-"
 
 
 def test_get_current_date_is_today():
     result = get_current_date()
-    today = datetime.now().strftime('%Y-%m-%d')
+    today = datetime.now().strftime("%Y-%m-%d")
     assert result == today
 
 
@@ -62,8 +64,8 @@ def test_save_output_with_path(tmp_path, sample_stock_data):
     assert output_path.exists()
     saved = pd.read_csv(output_path)
     assert len(saved) == len(sample_stock_data)
-    assert 'close' in saved.columns
-    assert 'volume' in saved.columns
+    assert "close" in saved.columns
+    assert "volume" in saved.columns
 
 
 def test_save_output_without_path(sample_stock_data):
@@ -76,5 +78,3 @@ def test_save_output_empty_dataframe(tmp_path):
     output_path = tmp_path / "empty.csv"
     save_output(empty_df, "empty_tag", output_path)
     assert output_path.exists()
-
-

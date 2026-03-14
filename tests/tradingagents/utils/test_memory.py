@@ -1,4 +1,5 @@
 import pytest
+
 from tradingagents.agents.utils.memory import FinancialSituationMemory
 
 
@@ -41,7 +42,7 @@ def test_add_situations_multiple():
     situations = [
         ("market crash", "buy gold"),
         ("high inflation", "buy real estate"),
-        ("recession", "hold cash")
+        ("recession", "hold cash"),
     ]
     memory.add_situations(situations)
     assert memory.bm25 is not None
@@ -58,8 +59,8 @@ def test_get_memories_single_match():
     memory.add_situations([("market crash today", "buy gold")])
     results = memory.get_memories("market crashed", n_matches=1)
     assert len(results) == 1
-    assert results[0]['recommendation'] == "buy gold"
-    assert 'similarity_score' in results[0]
+    assert results[0]["recommendation"] == "buy gold"
+    assert "similarity_score" in results[0]
 
 
 def test_get_memories_multiple_matches():
@@ -67,7 +68,7 @@ def test_get_memories_multiple_matches():
     memory.add_situations([
         ("market crash", "buy gold"),
         ("market up", "buy stocks"),
-        ("market down", "buy bonds")
+        ("market down", "buy bonds"),
     ])
     results = memory.get_memories("market", n_matches=2)
     assert len(results) == 2
@@ -78,7 +79,7 @@ def test_get_memories_no_match():
     memory.add_situations([("weather sunny", "go outside")])
     results = memory.get_memories("market analysis")
     assert len(results) == 1
-    assert results[0]['similarity_score'] <= 0
+    assert results[0]["similarity_score"] <= 0
 
 
 def test_get_memories_empty_memory():
@@ -116,9 +117,10 @@ def test_get_memories_returns_correct_structure():
     memory = FinancialSituationMemory("test", {})
     memory.add_situations([("market crash", "buy gold")])
     results = memory.get_memories("market")
-    assert all(key in results[0] for key in [
-        'matched_situation', 'recommendation', 'similarity_score'
-    ])
+    assert all(
+        key in results[0]
+        for key in ["matched_situation", "recommendation", "similarity_score"]
+    )
 
 
 def test_add_situations_rebuilds_index():
@@ -132,7 +134,7 @@ def test_get_memories_respects_n_matches():
     memory.add_situations([
         ("market crash", "buy gold"),
         ("market up", "buy stocks"),
-        ("market down", "buy bonds")
+        ("market down", "buy bonds"),
     ])
     results = memory.get_memories("market", n_matches=1)
     assert len(results) == 1
