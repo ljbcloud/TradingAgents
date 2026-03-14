@@ -10,7 +10,7 @@ I specialize in developing the terminal UI (TUI) for the TradingAgents project. 
 
 ### Project Knowledge
 - TUI is in cli/main.py
-- TUI uses Textual or similar TUI framework
+- TUI uses Rich framework
 - TUI integrates with trading agents
 - TUI provides real-time trading feedback
 - CLI utilities are in cli/utils.py
