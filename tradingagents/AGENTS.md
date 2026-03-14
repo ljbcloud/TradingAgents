@@ -25,13 +25,13 @@ I specialize in working with LLM clients and integrations in the TradingAgents p
 - Provider-specific clients: openai_client.py, google_client.py, anthropic_client.py
 - Factory pattern for client creation in factory.py
 - Validators for LLM responses in validators.py
-- DEFAULT_CONFIG controls which provider to use
+- DEFAULT_CONFIG controls which provider to use (llm_provider, deep_think_llm, quick_think_llm, backend_url)
 
 ### Commands & Tools
 
 ```bash
-# Test LLM client
-uv run python -c "from tradingagents.llm_clients.factory import create_llm_client; client = create_llm_client(); print('Client created:', type(client))"
+# Test LLM client using DEFAULT_CONFIG
+uv run python -c "from tradingagents.llm_clients.factory import create_llm_client; from tradingagents.default_config import DEFAULT_CONFIG; client = create_llm_client(DEFAULT_CONFIG['llm_provider'], DEFAULT_CONFIG['deep_think_llm'], DEFAULT_CONFIG['backend_url']); print('Client created:', type(client))"
 
 # View LLM client source
 ls tradingagents/llm_clients/
