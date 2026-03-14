@@ -4,7 +4,7 @@ This file defines agent personas for GitHub Copilot and internal developers work
 
 ## Directory-Specific AGENTS.md Files
 
-For detailed agent definitions specific to each subdirectory, see:
+For detailed agent definitions specific to each subdirectory, see (to be created):
 - `/docs/AGENTS.md` - Documentation workflows
 - `/tradingagents/AGENTS.md` - Core trading logic
 - `/tradingagents/agents/AGENTS.md` - Agent development
@@ -31,7 +31,7 @@ I specialize in the TradingAgents project structure, configuration management, a
 - LLM providers: OpenAI, Google, Anthropic, xAI, OpenRouter, Ollama
 - Data vendors: Alpha Vantage, Yahoo Finance
 - Git workflow: commits follow format `feat:/fix:/docs:/chore:/test: description`
-- asdf manages Python 3.10+ versions
+- asdf manages Python 3.13.5 versions
 - uv manages virtual environment and dependencies
 
 ### Commands & Tools
@@ -75,9 +75,9 @@ git log --oneline -10
 - Changing dependency versions
 
 **Never Do:**
-- Modify .python-version directly (use asdf instead)
+- Modify .tool-versions directly (use asdf instead)
 - Use pip directly (use uv instead)
-- Commit without running `ruff check . && ruff format .`
+- Commit without running `ruff check . --config=pyproject.toml && ruff format . --config=pyproject.toml`
 
 ---
 
@@ -93,51 +93,57 @@ I ensure code quality in the TradingAgents project by managing linting and forma
 
 ### Project Knowledge
 - Project uses ruff for linting and formatting
-- Configuration in .ruff.toml
-- Pre-commit hooks enforce linting before commits
-- Must pass lint checks before merging to main
+- Configuration in pyproject.toml
+- Pre-commit hooks enforce linting and bandit security checks before commits
+- Must pass lint and security checks before merging to main
 
 ### Commands & Tools
 
 ```bash
 # Check for lint issues
-ruff check .
+ruff check . --config=pyproject.toml
 
 # Fix auto-fixable lint issues
-ruff check --fix .
+ruff check . --fix --config=pyproject.toml
 
 # Format code
-ruff format .
+ruff format . --config=pyproject.toml
 
 # Check and format in one command
-ruff check . && ruff format .
+ruff check . --config=pyproject.toml && ruff format . --config=pyproject.toml
 
-# Run pre-commit hooks manually
+# Run security checks with bandit
+bandit -r . -c pyproject.toml
+
+# Run pre-commit hooks manually (includes ruff and bandit)
 uv run pre-commit run --all-files
 ```
 
 ### Standards & Conventions
-- Run `ruff check . && ruff format .` before committing
-- Use `ruff check --fix .` for auto-fixable issues
+- Run `ruff check . --config=pyproject.toml && ruff format . --config=pyproject.toml` before committing
+- Use `ruff check . --fix --config=pyproject.toml` for auto-fixable issues
 - Manual fixes required for some lint issues
-- Pre-commit hooks run automatically before commits
+- Pre-commit hooks run automatically before commits (includes ruff and bandit)
+- Security checks with bandit must pass before pushing
 
 ### Boundaries
 
 **Always Do:**
-- Use `ruff check . && ruff format .` before committing
-- Fix all lint issues before pushing
-- Use `ruff check --fix .` for auto-fixable issues
+- Use `ruff check . --config=pyproject.toml && ruff format . --config=pyproject.toml` before committing
+- Fix all lint and security issues before pushing
+- Use `ruff check . --fix --config=pyproject.toml` for auto-fixable issues
+- Run bandit security checks (`bandit -r . -c pyproject.toml`)
 
 **Ask First:**
-- Modifying .ruff.toml configuration
-- Disabling specific lint rules
+- Modifying pyproject.toml ruff or bandit configuration
+- Disabling specific lint or security rules
 - Changing pre-commit hook configuration
 
 **Never Do:**
-- Commit code that doesn't pass lint checks
+- Commit code that doesn't pass lint or security checks
 - Disable pre-commit hooks
 - Use other formatters (black, autopep8) instead of ruff
+- Ignore bandit security warnings
 
 ---
 
