@@ -1,7 +1,8 @@
 from .alpha_vantage_common import _make_api_request, format_datetime_for_api
+from .logging_config import alpha_vantage_logger
 
 
-def get_news(ticker, start_date, end_date) -> dict[str, str] | str:
+def get_news(ticker: str, start_date: str, end_date: str) -> dict[str, str] | str:
     """Returns live and historical market news & sentiment data from premier news outlets worldwide.
 
     Covers stocks, cryptocurrencies, forex, and topics like fiscal policy, mergers & acquisitions, IPOs.
@@ -14,6 +15,9 @@ def get_news(ticker, start_date, end_date) -> dict[str, str] | str:
     Returns:
         Dictionary containing news sentiment data or JSON string.
     """
+    alpha_vantage_logger.info(
+        f"Fetching news for {ticker} from {start_date} to {end_date}"
+    )
 
     params = {
         "tickers": ticker,
@@ -25,7 +29,7 @@ def get_news(ticker, start_date, end_date) -> dict[str, str] | str:
 
 
 def get_global_news(
-    curr_date, look_back_days: int = 7, limit: int = 50
+    curr_date: str, look_back_days: int = 7, limit: int = 50
 ) -> dict[str, str] | str:
     """Returns global market news & sentiment data without ticker-specific filtering.
 
@@ -40,6 +44,10 @@ def get_global_news(
         Dictionary containing global news sentiment data or JSON string.
     """
     from datetime import datetime, timedelta
+
+    alpha_vantage_logger.info(
+        f"Fetching global news up to {curr_date} (look back {look_back_days} days, limit {limit})"
+    )
 
     # Calculate start date
     curr_dt = datetime.strptime(curr_date, "%Y-%m-%d")
@@ -67,6 +75,7 @@ def get_insider_transactions(symbol: str) -> dict[str, str] | str:
     Returns:
         Dictionary containing insider transaction data or JSON string.
     """
+    alpha_vantage_logger.info(f"Fetching insider transactions for {symbol}")
 
     params = {
         "symbol": symbol,

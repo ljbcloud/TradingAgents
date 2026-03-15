@@ -6,8 +6,11 @@ from datetime import datetime
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
 
+from .exceptions import VendorError
+from .logging_config import y_finance_logger
 
-def _extract_article_data(article: dict) -> dict:
+
+def _extract_article_data(article: dict) -> dict[str, str | None]:
     """Extract article data from yfinance news format (handles nested 'content' structure)."""
     # Handle nested content structure
     if "content" in article:
@@ -98,7 +101,15 @@ def get_news_yfinance(
         return f"## {ticker} News, from {start_date} to {end_date}:\n\n{news_str}"
 
     except Exception as e:
-        return f"Error fetching news for {ticker}: {e!s}"
+        error_msg = f"Error fetching news for {ticker}"
+        y_finance_logger.error(f"{error_msg}: {e}")
+        raise VendorError(
+            error_msg,
+            function="get_news_yfinance",
+            vendor="yfinance",
+            params={"ticker": ticker, "start_date": start_date, "end_date": end_date},
+            original_error=e,
+        )
 
 
 def get_global_news_yfinance(
@@ -186,4 +197,16 @@ def get_global_news_yfinance(
         return f"## Global Market News, from {start_date} to {curr_date}:\n\n{news_str}"
 
     except Exception as e:
-        return f"Error fetching global news: {e!s}"
+        error_msg = "Error fetching global news"
+        y_finance_logger.error(f"{error_msg}: {e}")
+        raise VendorError(
+            error_msg,
+            function="get_global_news_yfinance",
+            vendor="yfinance",
+            params={
+                "curr_date": curr_date,
+                "look_back_days": look_back_days,
+                "limit": limit,
+            },
+            original_error=e,
+        )

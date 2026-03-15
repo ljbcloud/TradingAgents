@@ -6,6 +6,8 @@ from io import StringIO
 import pandas as pd
 import requests
 
+from .logging_config import alpha_vantage_logger
+
 API_BASE_URL = "https://www.alphavantage.co/query"
 
 
@@ -14,11 +16,12 @@ def get_api_key() -> str:
     api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
     if not api_key:
         msg = "ALPHA_VANTAGE_API_KEY environment variable is not set."
+        alpha_vantage_logger.error(msg)
         raise ValueError(msg)
     return api_key
 
 
-def format_datetime_for_api(date_input) -> str:
+def format_datetime_for_api(date_input: str | datetime) -> str:
     """Convert various date formats to YYYYMMDDTHHMM format required by Alpha Vantage API."""
     if isinstance(date_input, str):
         # If already in correct format, return as-is
@@ -52,6 +55,8 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
     Raises:
         AlphaVantageRateLimitError: When API rate limit is exceeded
     """
+    alpha_vantage_logger.info(f"Making API request to Alpha Vantage: {function_name}")
+
     # Create a copy of params to avoid modifying the original
     api_params = params.copy()
     api_params.update({
@@ -70,28 +75,35 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
         # Remove entitlement if it's None or empty
         api_params.pop("entitlement", None)
 
-    response = requests.get(API_BASE_URL, params=api_params, timeout=30)
-    response.raise_for_status()
-
-    response_text = response.text
-
-    # Check if response is JSON (error responses are typically JSON)
     try:
-        response_json = json.loads(response_text)
-        # Check for rate limit error
-        if "Information" in response_json:
-            info_message = response_json["Information"]
-            if (
-                "rate limit" in info_message.lower()
-                or "api key" in info_message.lower()
-            ):
-                msg = f"Alpha Vantage rate limit exceeded: {info_message}"
-                raise AlphaVantageRateLimitError(msg)
-    except json.JSONDecodeError:
-        # Response is not JSON (likely CSV data), which is normal
-        pass
+        response = requests.get(API_BASE_URL, params=api_params, timeout=30)
+        response.raise_for_status()
 
-    return response_text
+        response_text = response.text
+
+        # Check if response is JSON (error responses are typically JSON)
+        try:
+            response_json = json.loads(response_text)
+            # Check for rate limit error
+            if "Information" in response_json:
+                info_message = response_json["Information"]
+                if (
+                    "rate limit" in info_message.lower()
+                    or "api key" in info_message.lower()
+                ):
+                    msg = f"Alpha Vantage rate limit exceeded: {info_message}"
+                    alpha_vantage_logger.warning(msg)
+                    raise AlphaVantageRateLimitError(msg)
+        except json.JSONDecodeError:
+            # Response is not JSON (likely CSV data), which is normal
+            pass
+
+        alpha_vantage_logger.debug(f"API request successful: {function_name}")
+        return response_text
+
+    except requests.RequestException as e:
+        alpha_vantage_logger.error(f"API request failed for {function_name}: {e}")
+        raise
 
 
 def _filter_csv_by_date_range(csv_data: str, start_date: str, end_date: str) -> str:
@@ -107,6 +119,7 @@ def _filter_csv_by_date_range(csv_data: str, start_date: str, end_date: str) -> 
         Filtered CSV string
     """
     if not csv_data or csv_data.strip() == "":
+        alpha_vantage_logger.warning("Empty CSV data provided to filter")
         return csv_data
 
     try:
@@ -122,10 +135,13 @@ def _filter_csv_by_date_range(csv_data: str, start_date: str, end_date: str) -> 
         end_dt = pd.to_datetime(end_date)
 
         filtered_df = df[(df[date_col] >= start_dt) & (df[date_col] <= end_dt)]
+        alpha_vantage_logger.debug(
+            f"Filtered CSV from {start_date} to {end_date}: {len(df)} rows -> {len(filtered_df)} rows"
+        )
 
         # Convert back to CSV string
         return filtered_df.to_csv(index=False)
 
     except Exception as e:
-        print(f"Warning: Failed to filter CSV data by date range: {e}")  # noqa: T201
+        alpha_vantage_logger.warning(f"Failed to filter CSV data by date range: {e}")
         return csv_data

@@ -1,6 +1,8 @@
 import operator
 
 from .alpha_vantage_common import _make_api_request
+from .exceptions import ValidationError, VendorError
+from .logging_config import alpha_vantage_logger
 
 
 def get_indicator(
@@ -16,7 +18,7 @@ def get_indicator(
     Returns Alpha Vantage technical indicator values over a time window.
 
     Args:
-        symbol: ticker symbol of the company
+        symbol: ticker symbol of company
         indicator: technical indicator to get the analysis and report of
         curr_date: The current trading date you are trading on, YYYY-mm-dd
         look_back_days: how many days to look back
@@ -27,6 +29,10 @@ def get_indicator(
     Returns:
         String containing indicator values and description
     """
+    alpha_vantage_logger.info(
+        f"Fetching indicator {indicator} for {symbol} from {curr_date} (look back {look_back_days} days)"
+    )
+
     from datetime import datetime
 
     from dateutil.relativedelta import relativedelta
@@ -63,6 +69,7 @@ def get_indicator(
 
     if indicator not in supported_indicators:
         msg = f"Indicator {indicator} is not supported. Please choose from: {list(supported_indicators.keys())}"
+        alpha_vantage_logger.error(msg)
         raise ValueError(msg)
 
     curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
@@ -157,19 +164,40 @@ def get_indicator(
             # In a real implementation, this would need to be calculated from OHLCV data
             return f"## VWMA (Volume Weighted Moving Average) for {symbol}:\n\nVWMA calculation requires OHLCV data and is not directly available from Alpha Vantage API.\nThis indicator would need to be calculated from the raw stock data using volume-weighted price averaging.\n\n{indicator_descriptions.get('vwma', 'No description available.')}"
         else:
-            return f"Error: Indicator {indicator} not implemented yet."
+            msg = f"Indicator {indicator} not implemented yet"
+            alpha_vantage_logger.error(msg)
+            raise ValidationError(  # noqa: TRY301
+                msg,
+                function="get_indicator",
+                vendor="alpha_vantage",
+                params={"indicator": indicator, "symbol": symbol},
+            )
 
         # Parse CSV data and extract values for the date range
         lines = data.strip().split("\n")
         if len(lines) < 2:
-            return f"Error: No data returned for {indicator}"
+            msg = f"No data returned for {indicator}"
+            alpha_vantage_logger.error(msg)
+            raise ValidationError(  # noqa: TRY301
+                msg,
+                function="get_indicator",
+                vendor="alpha_vantage",
+                params={"indicator": indicator, "symbol": symbol},
+            )
 
         # Parse header and data
         header = [col.strip() for col in lines[0].split(",")]
         try:
             date_col_idx = header.index("time")
         except ValueError:
-            return f"Error: 'time' column not found in data for {indicator}. Available columns: {header}"
+            msg = f"'time' column not found in data for {indicator}. Available columns: {header}"
+            alpha_vantage_logger.error(msg)
+            raise ValidationError(
+                msg,
+                function="get_indicator",
+                vendor="alpha_vantage",
+                params={"indicator": indicator, "symbol": symbol},
+            )
 
         # Map internal indicator names to expected CSV column names from Alpha Vantage
         col_name_map = {
@@ -195,7 +223,19 @@ def get_indicator(
             try:
                 value_col_idx = header.index(target_col_name)
             except ValueError:
-                return f"Error: Column '{target_col_name}' not found for indicator '{indicator}'. Available columns: {header}"
+                msg = f"Column '{target_col_name}' not found for indicator '{indicator}'. Available columns: {header}"
+                alpha_vantage_logger.error(msg)
+                raise ValidationError(
+                    msg,
+                    function="get_indicator",
+                    vendor="alpha_vantage",
+                    params={
+                        "indicator": indicator,
+                        "symbol": symbol,
+                        "target_column": target_col_name,
+                        "available_columns": header,
+                    },
+                )
 
         result_data = []
         for line in lines[1:]:
@@ -233,4 +273,12 @@ def get_indicator(
         )
 
     except Exception as e:
-        return f"Error retrieving {indicator} data: {e!s}"
+        msg = f"Error retrieving {indicator} data"
+        alpha_vantage_logger.error(f"{msg}: {e}")
+        raise VendorError(
+            msg,
+            function="get_indicator",
+            vendor="alpha_vantage",
+            params={"indicator": indicator, "symbol": symbol},
+            original_error=e,
+        )

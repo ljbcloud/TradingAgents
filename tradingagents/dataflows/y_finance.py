@@ -6,6 +6,8 @@ from typing import Annotated
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
 
+from .exceptions import VendorError
+from .logging_config import y_finance_logger
 from .stockstats_utils import StockstatsUtils
 
 
@@ -13,7 +15,11 @@ def get_YFin_data_online(
     symbol: Annotated[str, "ticker symbol of the company"],
     start_date: Annotated[str, "Start date in yyyy-mm-dd format"],
     end_date: Annotated[str, "End date in yyyy-mm-dd format"],
-):
+) -> str:
+    y_finance_logger.info(
+        f"Fetching Yahoo Finance data for {symbol} from {start_date} to {end_date}"
+    )
+
     datetime.strptime(start_date, "%Y-%m-%d")
     datetime.strptime(end_date, "%Y-%m-%d")
 
@@ -25,9 +31,14 @@ def get_YFin_data_online(
 
     # Check if data is empty
     if data.empty:
+        y_finance_logger.warning(
+            f"No data found for symbol '{symbol}' between {start_date} and {end_date}"
+        )
         return (
             f"No data found for symbol '{symbol}' between {start_date} and {end_date}"
         )
+
+    y_finance_logger.debug(f"Retrieved {len(data)} records for {symbol}")
 
     # Remove timezone info from index for cleaner output
     if data.index.tz is not None:
@@ -58,6 +69,9 @@ def get_stock_stats_indicators_window(
     ],
     look_back_days: Annotated[int, "how many days to look back"],
 ) -> str:
+    y_finance_logger.info(
+        f"Fetching indicator {indicator} for {symbol} at {curr_date} (look back {look_back_days} days)"
+    )
     best_ind_params = {
         # Moving Averages
         "close_50_sma": (
@@ -193,6 +207,8 @@ def _get_stock_stats_bulk(
     Fetches data once and calculates indicator for all available dates.
     Returns dict mapping date strings to indicator values.
     """
+    y_finance_logger.debug(f"Bulk calculating indicator {indicator} for {symbol}")
+
     import pandas as pd
     from stockstats import wrap
 
@@ -211,8 +227,10 @@ def _get_stock_stats_bulk(
                 )
             )
             df = wrap(data)
+            y_finance_logger.debug(f"Loaded local data for {symbol}")
         except FileNotFoundError:
             msg = "Stockstats fail: Yahoo Finance data not fetched yet!"
+            y_finance_logger.error(msg)
             raise Exception(msg)
     else:
         # Online data fetching with caching
@@ -234,7 +252,11 @@ def _get_stock_stats_bulk(
         if pathlib.Path(data_file).exists():
             data = pd.read_csv(data_file)
             data["Date"] = pd.to_datetime(data["Date"])
+            y_finance_logger.debug(f"Cache hit for {symbol} data")
         else:
+            y_finance_logger.info(
+                f"Cache miss, downloading {symbol} data from Yahoo Finance"
+            )
             data = yf.download(
                 symbol,
                 start=start_date_str,
@@ -245,6 +267,7 @@ def _get_stock_stats_bulk(
             )
             data = data.reset_index()
             data.to_csv(data_file, index=False)
+            y_finance_logger.info(f"Downloaded {len(data)} records for {symbol}")
 
         df = wrap(data)
         df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
@@ -292,13 +315,18 @@ def get_stockstats_indicator(
 def get_fundamentals(
     ticker: Annotated[str, "ticker symbol of the company"],
     curr_date: Annotated[str | None, "current date (not used for yfinance)"] = None,
-):
+) -> str:
     """Get company fundamentals overview from yfinance."""
+    y_finance_logger.info(f"Fetching fundamentals for {ticker} from yfinance")
+
     try:
         ticker_obj = yf.Ticker(ticker.upper())
         info = ticker_obj.info
 
         if not info:
+            y_finance_logger.warning(
+                f"No fundamentals data found for symbol '{ticker}'"
+            )
             return f"No fundamentals data found for symbol '{ticker}'"
 
         fields = [
@@ -345,14 +373,22 @@ def get_fundamentals(
         return header + "\n".join(lines)
 
     except Exception as e:
-        return f"Error retrieving fundamentals for {ticker}: {e!s}"
+        error_msg = f"Error retrieving fundamentals for {ticker}"
+        y_finance_logger.error(f"{error_msg}: {e}")
+        raise VendorError(
+            error_msg,
+            function="get_fundamentals",
+            vendor="yfinance",
+            params={"ticker": ticker},
+            original_error=e,
+        )
 
 
 def get_balance_sheet(
     ticker: Annotated[str, "ticker symbol of the company"],
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
     curr_date: Annotated[str | None, "current date (not used for yfinance)"] = None,
-):
+) -> str:
     """Get balance sheet data from yfinance."""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
@@ -377,14 +413,22 @@ def get_balance_sheet(
         return header + csv_string
 
     except Exception as e:
-        return f"Error retrieving balance sheet for {ticker}: {e!s}"
+        error_msg = f"Error retrieving balance sheet for {ticker}"
+        y_finance_logger.error(f"{error_msg}: {e}")
+        raise VendorError(
+            error_msg,
+            function="get_balance_sheet",
+            vendor="yfinance",
+            params={"ticker": ticker, "freq": freq},
+            original_error=e,
+        )
 
 
 def get_cashflow(
     ticker: Annotated[str, "ticker symbol of the company"],
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
     curr_date: Annotated[str | None, "current date (not used for yfinance)"] = None,
-):
+) -> str:
     """Get cash flow data from yfinance."""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
@@ -409,14 +453,22 @@ def get_cashflow(
         return header + csv_string
 
     except Exception as e:
-        return f"Error retrieving cash flow for {ticker}: {e!s}"
+        error_msg = f"Error retrieving cash flow for {ticker}"
+        y_finance_logger.error(f"{error_msg}: {e}")
+        raise VendorError(
+            error_msg,
+            function="get_cashflow",
+            vendor="yfinance",
+            params={"ticker": ticker, "freq": freq},
+            original_error=e,
+        )
 
 
 def get_income_statement(
     ticker: Annotated[str, "ticker symbol of the company"],
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
     curr_date: Annotated[str | None, "current date (not used for yfinance)"] = None,
-):
+) -> str:
     """Get income statement data from yfinance."""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
@@ -441,10 +493,20 @@ def get_income_statement(
         return header + csv_string
 
     except Exception as e:
-        return f"Error retrieving income statement for {ticker}: {e!s}"
+        error_msg = f"Error retrieving income statement for {ticker}"
+        y_finance_logger.error(f"{error_msg}: {e}")
+        raise VendorError(
+            error_msg,
+            function="get_income_statement",
+            vendor="yfinance",
+            params={"ticker": ticker, "freq": freq},
+            original_error=e,
+        )
 
 
-def get_insider_transactions(ticker: Annotated[str, "ticker symbol of the company"]):
+def get_insider_transactions(
+    ticker: Annotated[str, "ticker symbol of the company"],
+) -> str:
     """Get insider transactions data from yfinance."""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
@@ -465,4 +527,12 @@ def get_insider_transactions(ticker: Annotated[str, "ticker symbol of the compan
         return header + csv_string
 
     except Exception as e:
-        return f"Error retrieving insider transactions for {ticker}: {e!s}"
+        error_msg = f"Error retrieving insider transactions for {ticker}"
+        y_finance_logger.error(f"{error_msg}: {e}")
+        raise VendorError(
+            error_msg,
+            function="get_insider_transactions",
+            vendor="yfinance",
+            params={"ticker": ticker},
+            original_error=e,
+        )

@@ -4,14 +4,14 @@ from tradingagents import default_config
 _config: dict | None = None
 
 
-def initialize_config():
+def initialize_config() -> None:
     """Initialize the configuration with default values."""
     global _config
     if _config is None:
         _config = default_config.DEFAULT_CONFIG.copy()
 
 
-def set_config(config: dict):
+def set_config(config: dict) -> None:
     """Update the configuration with custom values."""
     global _config
     if _config is None:

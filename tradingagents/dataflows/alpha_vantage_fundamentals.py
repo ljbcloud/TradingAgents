@@ -1,4 +1,5 @@
 from .alpha_vantage_common import _make_api_request
+from .logging_config import alpha_vantage_logger
 
 
 def get_fundamentals(ticker: str, curr_date: str | None = None) -> str:
@@ -12,6 +13,8 @@ def get_fundamentals(ticker: str, curr_date: str | None = None) -> str:
     Returns:
         str: Company overview data including financial ratios and key metrics
     """
+    alpha_vantage_logger.info(f"Fetching fundamentals for {ticker}")
+
     params = {
         "symbol": ticker,
     }
@@ -33,6 +36,8 @@ def get_balance_sheet(
     Returns:
         str: Balance sheet data with normalized fields
     """
+    alpha_vantage_logger.info(f"Fetching balance sheet for {ticker}")
+
     params = {
         "symbol": ticker,
     }
@@ -54,6 +59,8 @@ def get_cashflow(
     Returns:
         str: Cash flow statement data with normalized fields
     """
+    alpha_vantage_logger.info(f"Fetching cash flow for {ticker}")
+
     params = {
         "symbol": ticker,
     }
@@ -75,6 +82,8 @@ def get_income_statement(
     Returns:
         str: Income statement data with normalized fields
     """
+    alpha_vantage_logger.info(f"Fetching income statement for {ticker}")
+
     params = {
         "symbol": ticker,
     }
