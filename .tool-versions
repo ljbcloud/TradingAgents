@@ -1,4 +1,2 @@
-ruff 0.15.5
-pre-commit 4.5.1
 python 3.13.5
 uv 0.9.25

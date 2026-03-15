@@ -1094,7 +1094,9 @@ def run_analysis():
     # Normalize analyst selection to predefined order
     # (selection is a 'set', order is fixed)
     selected_set = {analyst.value for analyst in selections["analysts"]}
-    selected_analyst_keys = [analyst.value for _, analyst in ANALYST_ORDER if analyst.value in selected_set]
+    selected_analyst_keys = [
+        analyst.value for _, analyst in ANALYST_ORDER if analyst.value in selected_set
+    ]
 
     # Initialize the graph with callbacks bound to LLMs
     graph = TradingAgentsGraph(
