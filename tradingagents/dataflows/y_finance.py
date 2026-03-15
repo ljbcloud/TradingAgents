@@ -6,9 +6,21 @@ from typing import Annotated
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
 
+from .constants import CACHE_WINDOW_YEARS, PRICE_DECIMAL_PLACES
 from .exceptions import VendorError
 from .logging_config import y_finance_logger
 from .stockstats_utils import StockstatsUtils
+
+# Cache for Ticker instances to enable reuse across fundamental functions
+_ticker_cache: dict[str, yf.Ticker] = {}
+
+
+def _get_ticker(symbol: str) -> yf.Ticker:
+    """Get or create cached Ticker instance for a symbol."""
+    normalized = symbol.upper()
+    if normalized not in _ticker_cache:
+        _ticker_cache[normalized] = yf.Ticker(normalized)
+    return _ticker_cache[normalized]
 
 
 def get_YFin_data_online(
@@ -23,10 +35,7 @@ def get_YFin_data_online(
     datetime.strptime(start_date, "%Y-%m-%d")
     datetime.strptime(end_date, "%Y-%m-%d")
 
-    # Create ticker object
-    ticker = yf.Ticker(symbol.upper())
-
-    # Fetch historical data for the specified date range
+    ticker = _get_ticker(symbol)
     data = ticker.history(start=start_date, end=end_date)
 
     # Check if data is empty
@@ -48,7 +57,7 @@ def get_YFin_data_online(
     numeric_columns = ["Open", "High", "Low", "Close", "Adj Close"]
     for col in numeric_columns:
         if col in data.columns:
-            data[col] = data[col].round(2)
+            data[col] = data[col].round(PRICE_DECIMAL_PLACES)
 
     # Convert DataFrame to CSV string
     csv_string = data.to_csv()
@@ -238,7 +247,7 @@ def _get_stock_stats_bulk(
         pd.to_datetime(curr_date)
 
         end_date = today_date
-        start_date = today_date - pd.DateOffset(years=15)
+        start_date = today_date - pd.DateOffset(years=CACHE_WINDOW_YEARS)
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
 
@@ -297,9 +306,6 @@ def get_stockstats_indicator(
         str, "The current trading date you are trading on, YYYY-mm-dd"
     ],
 ) -> str:
-    curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
-    curr_date = curr_date_dt.strftime("%Y-%m-%d")
-
     try:
         indicator_value = StockstatsUtils.get_stock_stats(
             symbol,
@@ -320,7 +326,7 @@ def get_fundamentals(
     y_finance_logger.info(f"Fetching fundamentals for {ticker} from yfinance")
 
     try:
-        ticker_obj = yf.Ticker(ticker.upper())
+        ticker_obj = _get_ticker(ticker)
         info = ticker_obj.info
 
         if not info:
@@ -391,7 +397,7 @@ def get_balance_sheet(
 ) -> str:
     """Get balance sheet data from yfinance."""
     try:
-        ticker_obj = yf.Ticker(ticker.upper())
+        ticker_obj = _get_ticker(ticker)
 
         if freq.lower() == "quarterly":
             data = ticker_obj.quarterly_balance_sheet
@@ -431,7 +437,7 @@ def get_cashflow(
 ) -> str:
     """Get cash flow data from yfinance."""
     try:
-        ticker_obj = yf.Ticker(ticker.upper())
+        ticker_obj = _get_ticker(ticker)
 
         if freq.lower() == "quarterly":
             data = ticker_obj.quarterly_cashflow
@@ -471,7 +477,7 @@ def get_income_statement(
 ) -> str:
     """Get income statement data from yfinance."""
     try:
-        ticker_obj = yf.Ticker(ticker.upper())
+        ticker_obj = _get_ticker(ticker)
 
         if freq.lower() == "quarterly":
             data = ticker_obj.quarterly_income_stmt
@@ -509,7 +515,7 @@ def get_insider_transactions(
 ) -> str:
     """Get insider transactions data from yfinance."""
     try:
-        ticker_obj = yf.Ticker(ticker.upper())
+        ticker_obj = _get_ticker(ticker)
         data = ticker_obj.insider_transactions
 
         if data is None or data.empty:

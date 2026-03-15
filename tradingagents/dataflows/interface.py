@@ -1,3 +1,5 @@
+import requests
+
 from .alpha_vantage import (
     get_balance_sheet as get_alpha_vantage_balance_sheet,
 )
@@ -182,8 +184,9 @@ def route_to_vendor(method: str, *args, **kwargs) -> str:
 
         try:
             return impl_func(*args, **kwargs)
-        except AlphaVantageRateLimitError:
-            continue  # Only rate limits trigger fallback
+        except (AlphaVantageRateLimitError, requests.RequestException):
+            # Rate limits and network errors trigger fallback
+            continue
 
     msg = f"No available vendor for '{method}'"
     raise RuntimeError(msg)

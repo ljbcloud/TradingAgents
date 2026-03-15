@@ -1,4 +1,5 @@
 from .alpha_vantage_common import _make_api_request, format_datetime_for_api
+from .constants import NEWS_DEFAULT_LIMIT_ALPHA_VANTAGE, NEWS_DEFAULT_LOOKBACK_DAYS
 from .logging_config import alpha_vantage_logger
 
 
@@ -29,7 +30,9 @@ def get_news(ticker: str, start_date: str, end_date: str) -> dict[str, str] | st
 
 
 def get_global_news(
-    curr_date: str, look_back_days: int = 7, limit: int = 50
+    curr_date: str,
+    look_back_days: int = NEWS_DEFAULT_LOOKBACK_DAYS,
+    limit: int = NEWS_DEFAULT_LIMIT_ALPHA_VANTAGE,
 ) -> dict[str, str] | str:
     """Returns global market news & sentiment data without ticker-specific filtering.
 
@@ -43,7 +46,9 @@ def get_global_news(
     Returns:
         Dictionary containing global news sentiment data or JSON string.
     """
-    from datetime import datetime, timedelta
+    from datetime import datetime
+
+    from dateutil.relativedelta import relativedelta
 
     alpha_vantage_logger.info(
         f"Fetching global news up to {curr_date} (look back {look_back_days} days, limit {limit})"
@@ -51,7 +56,7 @@ def get_global_news(
 
     # Calculate start date
     curr_dt = datetime.strptime(curr_date, "%Y-%m-%d")
-    start_dt = curr_dt - timedelta(days=look_back_days)
+    start_dt = curr_dt - relativedelta(days=look_back_days)
     start_date = start_dt.strftime("%Y-%m-%d")
 
     params = {

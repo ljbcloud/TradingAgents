@@ -1,11 +1,14 @@
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from io import StringIO
+from typing import Any
 
 import pandas as pd
 import requests
 
+from .constants import API_TIMEOUT_SECONDS
 from .logging_config import alpha_vantage_logger
 
 API_BASE_URL = "https://www.alphavantage.co/query"
@@ -76,7 +79,9 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
         api_params.pop("entitlement", None)
 
     try:
-        response = requests.get(API_BASE_URL, params=api_params, timeout=30)
+        response = requests.get(
+            API_BASE_URL, params=api_params, timeout=API_TIMEOUT_SECONDS
+        )
         response.raise_for_status()
 
         response_text = response.text
@@ -145,3 +150,34 @@ def _filter_csv_by_date_range(csv_data: str, start_date: str, end_date: str) -> 
     except Exception as e:
         alpha_vantage_logger.warning(f"Failed to filter CSV data by date range: {e}")
         return csv_data
+
+
+MAX_PARALLEL_REQUESTS = 3  # Conservative for Alpha Vantage rate limits
+
+
+def _make_batch_api_requests(
+    requests: list[dict[str, Any]],
+) -> list[dict[str, Any] | str]:
+    """Make multiple API requests in parallel with rate limiting.
+
+    Args:
+        requests: List of dicts with 'function' and 'params' keys
+
+    Returns:
+        List of responses in same order as requests
+    """
+    results: list[dict[str, Any] | str] = [None] * len(requests)  # type: ignore[assignment]
+
+    with ThreadPoolExecutor(max_workers=MAX_PARALLEL_REQUESTS) as executor:
+        future_to_idx = {
+            executor.submit(_make_api_request, r["function"], r.get("params", {})): i
+            for i, r in enumerate(requests)
+        }
+        for future in as_completed(future_to_idx):
+            idx = future_to_idx[future]
+            try:
+                results[idx] = future.result()  # type: ignore[assignment]
+            except Exception as e:
+                results[idx] = str(e)
+
+    return results

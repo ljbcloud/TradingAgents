@@ -7,6 +7,7 @@ import yfinance as yf
 from stockstats import wrap
 
 from .config import get_config
+from .constants import CACHE_WINDOW_YEARS
 
 
 class StockstatsUtils:
@@ -26,7 +27,7 @@ class StockstatsUtils:
         curr_date_dt = pd.to_datetime(curr_date)
 
         end_date = today_date
-        start_date = today_date - pd.DateOffset(years=15)
+        start_date = today_date - pd.DateOffset(years=CACHE_WINDOW_YEARS)
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
 

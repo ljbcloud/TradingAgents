@@ -1,6 +1,7 @@
 import operator
 
 from .alpha_vantage_common import _make_api_request
+from .constants import RSI_DEFAULT_PERIOD
 from .exceptions import ValidationError, VendorError
 from .logging_config import alpha_vantage_logger
 
@@ -11,7 +12,7 @@ def get_indicator(
     curr_date: str,
     look_back_days: int,
     interval: str = "daily",
-    time_period: int = 14,
+    time_period: int = RSI_DEFAULT_PERIOD,
     series_type: str = "close",
 ) -> str:
     """
@@ -282,3 +283,105 @@ def get_indicator(
             params={"indicator": indicator, "symbol": symbol},
             original_error=e,
         )
+
+
+def get_indicators_bulk(
+    symbol: str,
+    indicators: list[str],
+    curr_date: str,
+    look_back_days: int = 30,
+    interval: str = "daily",
+    time_period: int = RSI_DEFAULT_PERIOD,
+    series_type: str = "close",
+) -> dict[str, str]:
+    """Fetch multiple indicators in parallel.
+
+    Groups indicators by API function to minimize API calls while maximizing
+    parallelism across different API endpoints.
+
+    Args:
+        symbol: Stock ticker symbol
+        indicators: List of indicator names to fetch
+        curr_date: Current date for analysis (YYYY-MM-DD)
+        look_back_days: Days to look back
+        interval: Time interval (daily, weekly, monthly)
+        time_period: Number of data points for calculation
+        series_type: The desired price type (close, open, high, low)
+
+    Returns:
+        Dict mapping indicator name to result string
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    supported_indicators = {
+        "close_50_sma",
+        "close_200_sma",
+        "close_10_ema",
+        "macd",
+        "macds",
+        "macdh",
+        "rsi",
+        "boll",
+        "boll_ub",
+        "boll_lb",
+        "atr",
+        "vwma",
+    }
+
+    indicator_descriptions = {
+        "close_50_sma": "50 SMA: A medium-term trend indicator.",
+        "close_200_sma": "200 SMA: A long-term trend benchmark.",
+        "close_10_ema": "10 EMA: A responsive short-term average.",
+        "macd": "MACD: Computes momentum via differences of EMAs.",
+        "macds": "MACD Signal: An EMA smoothing of the MACD line.",
+        "macdh": "MACD Histogram: Shows the gap between MACD and signal.",
+        "rsi": "RSI: Measures momentum to flag overbought/oversold conditions.",
+        "boll": "Bollinger Middle: A 20 SMA serving as the basis for Bollinger Bands.",
+        "boll_ub": "Bollinger Upper Band: Typically 2 std dev above middle.",
+        "boll_lb": "Bollinger Lower Band: Typically 2 std dev below middle.",
+        "atr": "ATR: Averages true range to measure volatility.",
+        "vwma": "VWMA: A moving average weighted by volume.",
+    }
+
+    invalid = [ind for ind in indicators if ind not in supported_indicators]
+    if invalid:
+        msg = f"Unsupported indicators: {invalid}. Choose from: {list(supported_indicators)}"
+        alpha_vantage_logger.error(msg)
+        raise ValueError(msg)
+
+    results: dict[str, str] = {}
+
+    vwma_indicators = [ind for ind in indicators if ind == "vwma"]
+    for ind in vwma_indicators:
+        results[ind] = (
+            f"## VWMA for {symbol}:\n\n"
+            "VWMA requires OHLCV data and is not directly available from Alpha Vantage.\n"
+            f"{indicator_descriptions.get(ind, '')}"
+        )
+
+    remaining = [ind for ind in indicators if ind != "vwma"]
+    if not remaining:
+        return results
+
+    def fetch_single_indicator(ind: str) -> tuple[str, str]:
+        try:
+            result = get_indicator(
+                symbol=symbol,
+                indicator=ind,
+                curr_date=curr_date,
+                look_back_days=look_back_days,
+                interval=interval,
+                time_period=time_period,
+                series_type=series_type,
+            )
+            return (ind, result)
+        except Exception as e:
+            return (ind, f"Error fetching {ind}: {e}")
+
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [executor.submit(fetch_single_indicator, ind) for ind in remaining]
+        for future in futures:
+            ind, result = future.result()
+            results[ind] = result
+
+    return results

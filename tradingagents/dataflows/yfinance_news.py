@@ -1,13 +1,32 @@
 """yfinance-based news data fetching functions."""
 
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
 
+from .constants import (
+    NEWS_DEFAULT_LIMIT_YFINANCE,
+    NEWS_DEFAULT_LOOKBACK_DAYS,
+    NEWS_FETCH_COUNT_YFINANCE,
+)
 from .exceptions import VendorError
 from .logging_config import y_finance_logger
+
+
+def _fetch_search_parallel(queries: list[str], news_count: int = 10) -> list:
+    """Fetch multiple search queries in parallel and return combined news results."""
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        return list(
+            executor.map(
+                lambda q: (
+                    yf.Search(q, news_count=news_count, enable_fuzzy_query=True).news
+                ),
+                queries,
+            )
+        )
 
 
 def _extract_article_data(article: dict) -> dict[str, str | None]:
@@ -66,7 +85,7 @@ def get_news_yfinance(
     """
     try:
         stock = yf.Ticker(ticker)
-        news = stock.get_news(count=20)
+        news = stock.get_news(count=NEWS_FETCH_COUNT_YFINANCE)
 
         if not news:
             return f"No news found for {ticker}"
@@ -114,8 +133,8 @@ def get_news_yfinance(
 
 def get_global_news_yfinance(
     curr_date: str,
-    look_back_days: int = 7,
-    limit: int = 10,
+    look_back_days: int = NEWS_DEFAULT_LOOKBACK_DAYS,
+    limit: int = NEWS_DEFAULT_LIMIT_YFINANCE,
 ) -> str:
     """
     Retrieve global/macro economic news using yfinance Search.
@@ -128,7 +147,6 @@ def get_global_news_yfinance(
     Returns:
         Formatted string containing global news articles
     """
-    # Search queries for macro/global news
     search_queries = [
         "stock market economy",
         "Federal Reserve interest rates",
@@ -140,26 +158,25 @@ def get_global_news_yfinance(
     seen_titles = set()
 
     try:
-        for query in search_queries:
-            search = yf.Search(
-                query=query,
-                news_count=limit,
-                enable_fuzzy_query=True,
-            )
+        search_results = _fetch_search_parallel(search_queries, limit)
 
-            if search.news:
-                for article in search.news:
-                    # Handle both flat and nested structures
-                    if "content" in article:
-                        data = _extract_article_data(article)
-                        title = data["title"]
-                    else:
-                        title = article.get("title", "")
+        for news_list in search_results:
+            if not news_list:
+                continue
 
-                    # Deduplicate by title
-                    if title and title not in seen_titles:
-                        seen_titles.add(title)
-                        all_news.append(article)
+            for article in news_list:
+                if "content" in article:
+                    data = _extract_article_data(article)
+                    title = data["title"]
+                else:
+                    title = article.get("title", "")
+
+                if title and title not in seen_titles:
+                    seen_titles.add(title)
+                    all_news.append(article)
+
+                if len(all_news) >= limit:
+                    break
 
             if len(all_news) >= limit:
                 break

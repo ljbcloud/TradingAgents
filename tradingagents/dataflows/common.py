@@ -5,6 +5,7 @@ This module contains shared utility functions used across different data vendors
 to reduce code duplication and ensure consistent behavior.
 
 Functions:
+    validate_and_parse_date: Validate and parse date strings
     parse_csv_data: Parse CSV string into header and rows
     find_column_index: Find column index in header
     extract_article_data: Normalize article data from news APIs
@@ -16,6 +17,29 @@ from typing import Any
 
 _ERR_EMPTY_CSV = "Empty CSV data provided"
 _ERR_NO_LINES = "CSV data has no lines"
+_ERR_INVALID_DATE = "Invalid date format: {}. Expected {}"
+
+
+def validate_and_parse_date(date_str: str, format: str = "%Y-%m-%d") -> datetime:
+    """Validate and parse a date string to datetime object.
+
+    Args:
+        date_str: Date string in specified format
+        format: Expected date format (default YYYY-MM-DD)
+
+    Returns:
+        datetime object
+
+    Raises:
+        ValidationError: If date string doesn't match format
+    """
+    from .exceptions import ValidationError
+
+    try:
+        return datetime.strptime(date_str, format)
+    except ValueError as e:
+        msg = _ERR_INVALID_DATE.format(date_str, format)
+        raise ValidationError(msg, function="validate_and_parse_date") from e
 
 
 def parse_csv_data(csv_string: str) -> tuple[list[str], list[list[str]]]:

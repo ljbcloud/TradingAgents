@@ -639,7 +639,7 @@ def test_get_YFin_data_online_formats_header_rounding_and_csv(monkeypatch):
             )
 
     monkeypatch.setattr(y_finance, "datetime", _FixedDateTime)
-    monkeypatch.setattr(y_finance.yf, "Ticker", lambda _symbol: _Ticker())
+    monkeypatch.setattr(y_finance, "_get_ticker", lambda _symbol: _Ticker())
 
     result = y_finance.get_YFin_data_online("AAPL", "2024-01-01", "2024-01-15")
 
@@ -701,7 +701,7 @@ def test_get_fundamentals_returns_no_data_message_when_info_empty(monkeypatch):
     class _Ticker:
         info = {}
 
-    monkeypatch.setattr(y_finance.yf, "Ticker", lambda _symbol: _Ticker())
+    monkeypatch.setattr(y_finance, "_get_ticker", lambda _symbol: _Ticker())
 
     assert (
         y_finance.get_fundamentals("AAPL")
@@ -721,7 +721,7 @@ def test_get_fundamentals_formats_selected_non_none_fields(monkeypatch):
         }
 
     monkeypatch.setattr(y_finance, "datetime", _FixedDateTime)
-    monkeypatch.setattr(y_finance.yf, "Ticker", lambda _symbol: _Ticker())
+    monkeypatch.setattr(y_finance, "_get_ticker", lambda _symbol: _Ticker())
 
     result = y_finance.get_fundamentals("AAPL")
 
@@ -736,8 +736,8 @@ def test_get_fundamentals_formats_selected_non_none_fields(monkeypatch):
 def test_get_fundamentals_raises_vendor_error_on_exception(monkeypatch):
     """Characterize yfinance fundamentals exception wrapping behavior."""
     monkeypatch.setattr(
-        y_finance.yf,
-        "Ticker",
+        y_finance,
+        "_get_ticker",
         lambda _symbol: (_ for _ in ()).throw(RuntimeError("boom")),
     )
 
@@ -799,7 +799,9 @@ def test_yfinance_financial_statement_functions_characterized(
             self.income_stmt = pd.DataFrame({"2023-12-31": [6]}, index=["Revenue"])
 
     monkeypatch.setattr(y_finance, "datetime", _FixedDateTime)
-    monkeypatch.setattr(y_finance.yf, "Ticker", lambda _symbol: _Ticker())
+    # Clear ticker cache and mock _get_ticker
+    y_finance._ticker_cache.clear()
+    monkeypatch.setattr(y_finance, "_get_ticker", lambda _symbol: _Ticker())
 
     func = getattr(y_finance, func_name)
     result = func("AAPL", freq=freq)
@@ -815,7 +817,8 @@ def test_yfinance_financial_statement_functions_characterized(
         quarterly_income_stmt = pd.DataFrame()
         income_stmt = pd.DataFrame()
 
-    monkeypatch.setattr(y_finance.yf, "Ticker", lambda _symbol: _EmptyTicker())
+    y_finance._ticker_cache.clear()
+    monkeypatch.setattr(y_finance, "_get_ticker", lambda _symbol: _EmptyTicker())
     empty_result = func("AAPL", freq=freq)
     assert empty_result == empty_message
 
@@ -835,8 +838,8 @@ def test_yfinance_statement_functions_raise_vendor_error_on_exception(
 ):
     """Characterize exception behavior for yfinance financial statement adapters."""
     monkeypatch.setattr(
-        y_finance.yf,
-        "Ticker",
+        y_finance,
+        "_get_ticker",
         lambda _symbol: (_ for _ in ()).throw(RuntimeError("bad ticker")),
     )
 
@@ -854,7 +857,7 @@ def test_get_insider_transactions_formats_csv_when_data_present(monkeypatch):
         )
 
     monkeypatch.setattr(y_finance, "datetime", _FixedDateTime)
-    monkeypatch.setattr(y_finance.yf, "Ticker", lambda _symbol: _Ticker())
+    monkeypatch.setattr(y_finance, "_get_ticker", lambda _symbol: _Ticker())
 
     result = y_finance.get_insider_transactions("AAPL")
     assert result.startswith("# Insider Transactions data for AAPL\n")
@@ -869,7 +872,7 @@ def test_get_insider_transactions_returns_no_data_message(monkeypatch, insider_d
     class _Ticker:
         insider_transactions = insider_data
 
-    monkeypatch.setattr(y_finance.yf, "Ticker", lambda _symbol: _Ticker())
+    monkeypatch.setattr(y_finance, "_get_ticker", lambda _symbol: _Ticker())
 
     assert (
         y_finance.get_insider_transactions("AAPL")
@@ -880,8 +883,8 @@ def test_get_insider_transactions_returns_no_data_message(monkeypatch, insider_d
 def test_get_insider_transactions_raises_vendor_error_on_exception(monkeypatch):
     """Characterize exception behavior for yfinance insider transactions."""
     monkeypatch.setattr(
-        y_finance.yf,
-        "Ticker",
+        y_finance,
+        "_get_ticker",
         lambda _symbol: (_ for _ in ()).throw(RuntimeError("bad")),
     )
 

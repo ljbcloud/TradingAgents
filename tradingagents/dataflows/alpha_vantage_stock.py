@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from .alpha_vantage_common import _filter_csv_by_date_range, _make_api_request
+from .constants import COMPACT_OUTPUTSIZE_DAY_THRESHOLD
 from .logging_config import alpha_vantage_logger
 
 
@@ -28,7 +29,11 @@ def get_stock(symbol: str, start_date: str, end_date: str) -> str:
     # Choose outputsize based on whether the requested range is within the latest 100 days
     # Compact returns latest 100 data points, so check if start_date is recent enough
     days_from_today_to_start = (today - start_dt).days
-    outputsize = "compact" if days_from_today_to_start < 100 else "full"
+    outputsize = (
+        "compact"
+        if days_from_today_to_start < COMPACT_OUTPUTSIZE_DAY_THRESHOLD
+        else "full"
+    )
 
     params = {
         "symbol": symbol,
