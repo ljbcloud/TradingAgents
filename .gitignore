@@ -222,3 +222,6 @@ __marimo__/
 # Runtime outputs
 reports/
 results/
+
+# Sisyphus AI assistant state
+.sisyphus/
