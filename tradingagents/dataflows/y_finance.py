@@ -1,3 +1,11 @@
+"""
+Yahoo Finance data vendor implementation.
+
+Provides functions to retrieve stock prices, technical indicators, fundamentals,
+balance sheets, cash flow, income statements, and insider transactions using
+the yfinance library with local caching support.
+"""
+
 import os
 import pathlib
 from datetime import datetime

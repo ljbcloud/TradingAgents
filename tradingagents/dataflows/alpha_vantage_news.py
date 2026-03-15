@@ -1,3 +1,10 @@
+"""
+Alpha Vantage news and sentiment data fetching.
+
+Provides functions to retrieve market news, global news, and insider transactions
+from Alpha Vantage NEWS_SENTIMENT and INSIDER_TRANSACTIONS endpoints.
+"""
+
 from .alpha_vantage_common import _make_api_request, format_datetime_for_api
 from .constants import NEWS_DEFAULT_LIMIT_ALPHA_VANTAGE, NEWS_DEFAULT_LOOKBACK_DAYS
 from .logging_config import alpha_vantage_logger

@@ -1,3 +1,10 @@
+"""
+Alpha Vantage stock price data fetching.
+
+Provides functions to retrieve OHLCV (Open, High, Low, Close, Volume) stock data
+from Alpha Vantage TIME_SERIES_DAILY_ADJUSTED endpoint.
+"""
+
 from datetime import datetime
 
 from .alpha_vantage_common import _filter_csv_by_date_range, _make_api_request

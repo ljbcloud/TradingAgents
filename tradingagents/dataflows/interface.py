@@ -1,3 +1,22 @@
+"""
+Vendor routing interface for dataflows module.
+
+This module provides the primary interface for routing data requests to
+appropriate vendors (Alpha Vantage, Yahoo Finance) with automatic fallback
+support when a vendor fails or rate limits.
+
+Primary Functions:
+    route_to_vendor: Main entry point for data requests with fallback support
+    get_vendor: Get the configured vendor for a category or tool
+    get_category_for_method: Look up the category for a given method name
+
+Example:
+    >>> from tradingagents.dataflows.interface import route_to_vendor
+    >>> data = route_to_vendor("get_stock_data", "AAPL", "2024-01-01", "2024-01-31")
+"""
+
+from collections.abc import Callable
+
 import requests
 
 from .alpha_vantage import (
@@ -89,7 +108,7 @@ VENDOR_LIST = [
 ]
 
 # Mapping of methods to their vendor-specific implementations
-VENDOR_METHODS = {
+VENDOR_METHODS: dict[str, dict[str, Callable[..., dict[str, str] | str]]] = {
     # core_stock_apis
     "get_stock_data": {
         "alpha_vantage": get_alpha_vantage_stock,
@@ -134,7 +153,17 @@ VENDOR_METHODS = {
 
 
 def get_category_for_method(method: str) -> str:
-    """Get the category that contains the specified method."""
+    """Look up the data category for a given method name.
+
+    Args:
+        method: The method name (e.g., "get_stock_data", "get_indicators")
+
+    Returns:
+        Category name (e.g., "core_stock_apis", "technical_indicators")
+
+    Raises:
+        ValueError: If the method is not found in any category
+    """
     for category, info in TOOLS_CATEGORIES.items():
         if method in info["tools"]:
             return category
@@ -143,8 +172,16 @@ def get_category_for_method(method: str) -> str:
 
 
 def get_vendor(category: str, method: str | None = None) -> str:
-    """Get the configured vendor for a data category or specific tool method.
-    Tool-level configuration takes precedence over category-level.
+    """Get the configured vendor for a data category or specific tool.
+
+    Tool-level configuration takes precedence over category-level settings.
+
+    Args:
+        category: Data category name (e.g., "core_stock_apis", "news_data")
+        method: Optional method name for tool-level vendor lookup
+
+    Returns:
+        Vendor name (e.g., "yfinance", "alpha_vantage", or comma-separated list)
     """
     config = get_config()
 
@@ -158,8 +195,24 @@ def get_vendor(category: str, method: str | None = None) -> str:
     return config.get("data_vendors", {}).get(category, "default")
 
 
-def route_to_vendor(method: str, *args, **kwargs) -> str:
-    """Route method calls to appropriate vendor implementation with fallback support."""
+def route_to_vendor(method: str, *args, **kwargs) -> dict[str, str] | str:
+    """Route a method call to the appropriate vendor implementation.
+
+    Tries configured vendors first, then falls back to other available vendors
+    if rate limits or network errors occur.
+
+    Args:
+        method: Method name to route (e.g., "get_stock_data", "get_news")
+        *args: Positional arguments passed to the vendor implementation
+        **kwargs: Keyword arguments passed to the vendor implementation
+
+    Returns:
+        Data from the first successful vendor call
+
+    Raises:
+        ValueError: If the method is not supported
+        RuntimeError: If no vendor is available for the method
+    """
     category = get_category_for_method(method)
     vendor_config = get_vendor(category, method)
     primary_vendors = [v.strip() for v in vendor_config.split(",")]

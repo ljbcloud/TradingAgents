@@ -1,3 +1,10 @@
+"""
+Alpha Vantage technical indicator data fetching.
+
+Provides functions to retrieve technical analysis indicators (SMA, EMA, MACD, RSI,
+Bollinger Bands, ATR, VWMA) from Alpha Vantage technical indicator endpoints.
+"""
+
 import operator
 
 from .alpha_vantage_common import _make_api_request

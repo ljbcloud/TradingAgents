@@ -1,3 +1,10 @@
+"""
+Stockstats technical indicator calculation utilities.
+
+Provides a wrapper class for calculating technical indicators from cached
+stock price data using the stockstats library.
+"""
+
 import os
 import pathlib
 from typing import Annotated

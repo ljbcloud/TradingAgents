@@ -1,3 +1,10 @@
+"""
+Alpha Vantage fundamental data fetching.
+
+Provides functions to retrieve company fundamentals, balance sheets, cash flow
+statements, and income statements from Alpha Vantage fundamental data endpoints.
+"""
+
 from concurrent.futures import ThreadPoolExecutor
 
 from .alpha_vantage_common import _make_api_request

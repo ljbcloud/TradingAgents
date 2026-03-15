@@ -1,3 +1,10 @@
+"""
+Configuration management for dataflows module.
+
+Provides runtime configuration access for data vendor settings,
+allowing the DEFAULT_CONFIG to be overridden when needed.
+"""
+
 from tradingagents import default_config
 
 # Use default config but allow it to be overridden

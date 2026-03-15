@@ -1,3 +1,10 @@
+"""
+General utility functions for dataflows module.
+
+Provides helper functions for date handling, file output, and class decoration
+used across data vendor implementations.
+"""
+
 from datetime import date, datetime, timedelta
 from typing import Annotated
 

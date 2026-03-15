@@ -29,7 +29,7 @@ def _fetch_search_parallel(queries: list[str], news_count: int = 10) -> list:
         )
 
 
-def _extract_article_data(article: dict) -> dict[str, str | None]:
+def _extract_article_data(article: dict) -> dict[str, str | datetime | None]:
     """Extract article data from yfinance news format (handles nested 'content' structure)."""
     # Handle nested content structure
     if "content" in article:
@@ -101,8 +101,9 @@ def get_news_yfinance(
             data = _extract_article_data(article)
 
             # Filter by date if publish time is available
-            if data["pub_date"]:
-                pub_date_naive = data["pub_date"].replace(tzinfo=None)
+            pub_date = data["pub_date"]
+            if isinstance(pub_date, datetime):
+                pub_date_naive = pub_date.replace(tzinfo=None)
                 if not (start_dt <= pub_date_naive <= end_dt + relativedelta(days=1)):
                     continue
 

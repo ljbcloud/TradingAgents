@@ -1,5 +1,13 @@
+"""
+Shared utilities for Alpha Vantage API interactions.
+
+Provides common functions for API key retrieval, request handling, date formatting,
+and batch operations used across Alpha Vantage data fetching modules.
+"""
+
 import json
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from io import StringIO
@@ -9,19 +17,39 @@ import pandas as pd
 import requests
 
 from .constants import API_TIMEOUT_SECONDS
+from .exceptions import ConfigurationError
 from .logging_config import alpha_vantage_logger
 
 API_BASE_URL = "https://www.alphavantage.co/query"
+ALPHA_VANTAGE_KEY_PATTERN = re.compile(r"^[A-Z0-9]{16,}$")
+
+
+def validate_alpha_vantage_key(api_key: str | None) -> str:
+    """Validate Alpha Vantage API key format.
+
+    Alpha Vantage keys are typically 16+ alphanumeric uppercase characters.
+
+    Args:
+        api_key: The API key to validate
+
+    Returns:
+        The validated API key
+
+    Raises:
+        ConfigurationError: If key format is invalid with helpful message
+    """
+    if not api_key:
+        msg = "Alpha Vantage API key is missing. Set ALPHA_VANTAGE_API_KEY environment variable."
+        raise ConfigurationError(msg, function="validate_alpha_vantage_key")
+    if not ALPHA_VANTAGE_KEY_PATTERN.match(api_key):
+        msg = f"Invalid Alpha Vantage API key format. Expected 16+ alphanumeric characters, got: {api_key[:4]}..."
+        raise ConfigurationError(msg, function="validate_alpha_vantage_key")
+    return api_key
 
 
 def get_api_key() -> str:
-    """Retrieve the API key for Alpha Vantage from environment variables."""
-    api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
-    if not api_key:
-        msg = "ALPHA_VANTAGE_API_KEY environment variable is not set."
-        alpha_vantage_logger.error(msg)
-        raise ValueError(msg)
-    return api_key
+    """Retrieve and validate the API key for Alpha Vantage from environment variables."""
+    return validate_alpha_vantage_key(os.getenv("ALPHA_VANTAGE_API_KEY"))
 
 
 def format_datetime_for_api(date_input: str | datetime) -> str:
@@ -157,7 +185,7 @@ MAX_PARALLEL_REQUESTS = 3  # Conservative for Alpha Vantage rate limits
 
 def _make_batch_api_requests(
     requests: list[dict[str, Any]],
-) -> list[dict[str, Any] | str]:
+) -> list[dict[str, Any] | str | None]:
     """Make multiple API requests in parallel with rate limiting.
 
     Args:
@@ -166,7 +194,7 @@ def _make_batch_api_requests(
     Returns:
         List of responses in same order as requests
     """
-    results: list[dict[str, Any] | str] = [None] * len(requests)  # type: ignore[assignment]
+    results: list[dict[str, Any] | str | None] = [None] * len(requests)
 
     with ThreadPoolExecutor(max_workers=MAX_PARALLEL_REQUESTS) as executor:
         future_to_idx = {
