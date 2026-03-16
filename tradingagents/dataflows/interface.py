@@ -47,6 +47,12 @@ from .alpha_vantage import (
     get_stock as get_alpha_vantage_stock,
 )
 from .alpha_vantage_common import AlphaVantageRateLimitError
+from .ccxt_common import CCXTRateLimitError
+from .ccxt_crypto import (
+    get_crypto_candles,
+    get_crypto_orderbook,
+    get_crypto_ticker,
+)
 
 # Configuration and routing logic
 from .config import get_config
@@ -100,11 +106,20 @@ TOOLS_CATEGORIES = {
             "get_insider_transactions",
         ],
     },
+    "crypto_apis": {
+        "description": "Cryptocurrency market data",
+        "tools": [
+            "get_crypto_candles",
+            "get_crypto_ticker",
+            "get_crypto_orderbook",
+        ],
+    },
 }
 
 VENDOR_LIST = [
     "yfinance",
     "alpha_vantage",
+    "ccxt",
 ]
 
 # Mapping of methods to their vendor-specific implementations
@@ -148,6 +163,16 @@ VENDOR_METHODS: dict[str, dict[str, Callable[..., dict[str, str] | str]]] = {
     "get_insider_transactions": {
         "alpha_vantage": get_alpha_vantage_insider_transactions,
         "yfinance": get_yfinance_insider_transactions,
+    },
+    # crypto_apis
+    "get_crypto_candles": {
+        "ccxt": get_crypto_candles,
+    },
+    "get_crypto_ticker": {
+        "ccxt": get_crypto_ticker,
+    },
+    "get_crypto_orderbook": {
+        "ccxt": get_crypto_orderbook,
     },
 }
 
@@ -237,7 +262,11 @@ def route_to_vendor(method: str, *args, **kwargs) -> dict[str, str] | str:
 
         try:
             return impl_func(*args, **kwargs)
-        except (AlphaVantageRateLimitError, requests.RequestException):
+        except (
+            AlphaVantageRateLimitError,
+            CCXTRateLimitError,
+            requests.RequestException,
+        ):
             # Rate limits and network errors trigger fallback
             continue
 

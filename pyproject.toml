@@ -9,6 +9,7 @@ description = "TradingAgents: Multi-Agents LLM Financial Trading Framework"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "ccxt>=4.0.0",
     "langchain-core>=0.3.81",
     "backtrader>=1.9.78.123",
     "chainlit>=2.5.5",
@@ -142,7 +143,10 @@ unfixable = [
 "tradingagents/**/*.py" = ["PD901"]
 "tradingagents/agents/utils/agent_utils.py" = ["F401"]
 "tradingagents/dataflows/alpha_vantage.py" = ["F401"]
+"tradingagents/dataflows/ccxt_crypto.py" = ["DTZ006", "PERF401"]
 "cli/**/*.py" = ["PD901"]
+"tests/tradingagents/dataflows/test_ccxt_common.py" = ["SIM117"]
+"tests/tradingagents/agents/utils/test_crypto_tools.py" = ["S101"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
