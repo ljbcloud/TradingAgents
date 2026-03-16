@@ -21,6 +21,16 @@ from tradingagents.agents.utils.agent_utils import (
     get_news,
     get_stock_data,
 )
+from tradingagents.agents.utils.crypto_fundamentals_tools import (
+    get_crypto_protocol_tvl,
+    get_crypto_protocol_yields,
+    get_crypto_token_info,
+)
+from tradingagents.agents.utils.crypto_tools import (
+    get_crypto_candles,
+    get_crypto_orderbook,
+    get_crypto_ticker,
+)
 from tradingagents.agents.utils.memory import FinancialSituationMemory
 from tradingagents.dataflows.config import set_config
 from tradingagents.default_config import DEFAULT_CONFIG
@@ -153,6 +163,10 @@ class TradingAgentsGraph:
                 get_stock_data,
                 # Technical indicators
                 get_indicators,
+                # Crypto market tools
+                get_crypto_candles,
+                get_crypto_ticker,
+                get_crypto_orderbook,
             ]),
             "social": ToolNode([
                 # News tools for social media analysis
@@ -170,6 +184,10 @@ class TradingAgentsGraph:
                 get_balance_sheet,
                 get_cashflow,
                 get_income_statement,
+                # Crypto fundamentals tools
+                get_crypto_token_info,
+                get_crypto_protocol_tvl,
+                get_crypto_protocol_yields,
             ]),
         }
 

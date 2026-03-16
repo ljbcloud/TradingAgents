@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from langgraph.graph import MessagesState
 from typing_extensions import TypedDict
@@ -48,6 +48,7 @@ class RiskDebateState(TypedDict):
 
 class AgentState(MessagesState):
     company_of_interest: Annotated[str, "Company that we are interested in trading"]
+    asset_type: Annotated[Literal["stock", "crypto"], "Asset type classification"]
     trade_date: Annotated[str, "What date we are trading at"]
 
     sender: Annotated[str, "Agent that sent this message"]

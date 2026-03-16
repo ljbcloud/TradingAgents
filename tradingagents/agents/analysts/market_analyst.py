@@ -1,21 +1,49 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from tradingagents.agents.utils.agent_utils import get_indicators, get_stock_data
+from tradingagents.agents.utils.crypto_tools import (
+    get_crypto_candles,
+    get_crypto_orderbook,
+    get_crypto_ticker,
+)
 
 
 def create_market_analyst(llm):
     def market_analyst_node(state):
         current_date = state["trade_date"]
         ticker = state["company_of_interest"]
-        state["company_of_interest"]
+        asset_type = state.get("asset_type", "stock")
 
-        tools = [
-            get_stock_data,
-            get_indicators,
-        ]
+        # Conditionally bind tools based on asset type
+        if asset_type == "crypto":
+            tools = [
+                get_crypto_candles,
+                get_crypto_ticker,
+                get_crypto_orderbook,
+            ]
+        else:
+            tools = [
+                get_stock_data,
+                get_indicators,
+            ]
 
-        system_message = (
-            """You are a trading assistant tasked with analyzing financial markets. Your role is to select the **most relevant indicators** for a given market condition or trading strategy from the following list. The goal is to choose up to **8 indicators** that provide complementary insights without redundancy. Categories and each category's indicators are:
+        # Build system message based on asset type
+        if asset_type == "crypto":
+            system_message = (
+                """You are a trading assistant tasked with analyzing cryptocurrency markets. You have access to the following tools:
+
+- get_crypto_candles: Retrieve OHLCV candlestick data for a cryptocurrency trading pair
+- get_crypto_ticker: Get current price, bid/ask, and 24h volume data
+- get_crypto_orderbook: Get order book data (bids and asks) to analyze market depth
+
+Analyze the cryptocurrency using these tools. Start by getting ticker data for current market state, then fetch candlestick data for price trends and patterns. Use the orderbook to understand market depth and potential support/resistance levels.
+
+Write a very detailed and nuanced report of the trends you observe. Do not simply state the trends are mixed, provide detailed and fine-grained analysis and insights that may help traders make decisions."""
+                """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
+            )
+        else:
+            system_message = (
+                """You are a trading assistant tasked with analyzing financial markets. Your role is to select the **most relevant indicators** for a given market condition or trading strategy from the following list. The goal is to choose up to **8 indicators** that provide complementary insights without redundancy. Categories and each category's indicators are:
 
 Moving Averages:
 - close_50_sma: 50 SMA: A medium-term trend indicator. Usage: Identify trend direction and serve as dynamic support/resistance. Tips: It lags price; combine with faster indicators for timely signals.
@@ -40,8 +68,8 @@ Volume-Based Indicators:
 - vwma: VWMA: A moving average weighted by volume. Usage: Confirm trends by integrating price action with volume data. Tips: Watch for skewed results from volume spikes; use in combination with other volume analyses.
 
 - Select indicators that provide diverse and complementary information. Avoid redundancy (e.g., do not select both rsi and stochrsi). Also briefly explain why they are suitable for the given market context. When you tool call, please use the exact name of the indicators provided above as they are defined parameters, otherwise your call will fail. Please make sure to call get_stock_data first to retrieve the CSV that is needed to generate indicators. Then use get_indicators with the specific indicator names. Write a very detailed and nuanced report of the trends you observe. Do not simply state the trends are mixed, provide detailed and finegrained analysis and insights that may help traders make decisions."""
-            """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
-        )
+                """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
+            )
 
         prompt = ChatPromptTemplate.from_messages([
             (
