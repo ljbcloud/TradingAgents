@@ -53,3 +53,21 @@ def get_crypto_protocol_yields(
              and risk indicators for available yield opportunities.
     """
     return route_to_vendor("get_crypto_protocol_yields", protocol, limit)
+
+
+@tool
+def get_crypto_chain_tvl(
+    chain: Annotated[
+        str, "Blockchain network name like ethereum, arbitrum, solana, polygon"
+    ],
+) -> str:
+    """
+    Retrieve Total Value Locked (TVL) for a blockchain network.
+    Uses the configured crypto fundamentals vendor (default: DefiLlama).
+    Args:
+        chain (str): Blockchain network name, e.g. ethereum, arbitrum, solana, polygon
+    Returns:
+        str: Chain TVL data including total value locked, chain ID, native token,
+             and TVL ranking among all chains.
+    """
+    return route_to_vendor("get_crypto_chain_tvl", chain)

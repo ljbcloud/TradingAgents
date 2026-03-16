@@ -7,6 +7,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_income_statement,
 )
 from tradingagents.agents.utils.crypto_fundamentals_tools import (
+    get_crypto_chain_tvl,
     get_crypto_protocol_tvl,
     get_crypto_protocol_yields,
     get_crypto_token_info,
@@ -24,6 +25,7 @@ def create_fundamentals_analyst(llm):
             tools = [
                 get_crypto_token_info,
                 get_crypto_protocol_tvl,
+                get_crypto_chain_tvl,
                 get_crypto_protocol_yields,
             ]
 
@@ -31,7 +33,8 @@ def create_fundamentals_analyst(llm):
                 "You are a crypto fundamentals researcher analyzing tokenomics, "
                 "on-chain metrics, and DeFi protocol data. "
                 "Use get_crypto_token_info for market cap, supply data, "
-                "get_crypto_protocol_tvl for Total Value Locked, and "
+                "get_crypto_protocol_tvl for protocol Total Value Locked, "
+                "get_crypto_chain_tvl for blockchain network TVL (e.g., Ethereum, Solana), and "
                 "get_crypto_protocol_yields for staking/farming yields. "
                 "Write a comprehensive report of the token's fundamentals "
                 "including supply economics, market positioning, and DeFi metrics "

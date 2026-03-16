@@ -55,7 +55,11 @@ from .ccxt_crypto import (
 )
 from .coingecko import get_crypto_token_info
 from .config import get_config
-from .defillama import get_crypto_protocol_tvl, get_crypto_protocol_yields
+from .defillama import (
+    get_crypto_chain_tvl,
+    get_crypto_protocol_tvl,
+    get_crypto_protocol_yields,
+)
 from .y_finance import (
     get_balance_sheet as get_yfinance_balance_sheet,
 )
@@ -119,6 +123,7 @@ TOOLS_CATEGORIES = {
         "tools": [
             "get_crypto_token_info",
             "get_crypto_protocol_tvl",
+            "get_crypto_chain_tvl",
             "get_crypto_protocol_yields",
         ],
     },
@@ -190,6 +195,9 @@ VENDOR_METHODS: dict[str, dict[str, Callable[..., dict[str, str] | str]]] = {
     },
     "get_crypto_protocol_tvl": {
         "defillama": get_crypto_protocol_tvl,
+    },
+    "get_crypto_chain_tvl": {
+        "defillama": get_crypto_chain_tvl,
     },
     "get_crypto_protocol_yields": {
         "defillama": get_crypto_protocol_yields,
