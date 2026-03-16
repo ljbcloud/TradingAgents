@@ -12,6 +12,7 @@ from tradingagents.agents import *
 # Import the new abstract tool methods from agent_utils
 from tradingagents.agents.utils.agent_utils import (
     get_balance_sheet,
+    get_bitcoin_fear_greed_index,
     get_cashflow,
     get_fundamentals,
     get_global_news,
@@ -169,8 +170,8 @@ class TradingAgentsGraph:
                 get_crypto_orderbook,
             ]),
             "social": ToolNode([
-                # News tools for social media analysis
                 get_news,
+                get_bitcoin_fear_greed_index,
             ]),
             "news": ToolNode([
                 # News and insider information

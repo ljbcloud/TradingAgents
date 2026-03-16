@@ -1,6 +1,4 @@
-from unittest.mock import MagicMock, patch
-
-import pytest
+# ruff: noqa: S101 - assert is expected in tests
 
 
 def test_get_stock_data_is_structured_tool():

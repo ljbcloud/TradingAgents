@@ -10,7 +10,9 @@ from typing import Annotated
 
 import pandas as pd
 
-SavePathType = Annotated[str, "File path to save data. If None, data is not saved."]
+SavePathType = Annotated[
+    str | None, "File path to save data. If None, data is not saved."
+]
 
 
 def save_output(data: pd.DataFrame, tag: str, save_path: SavePathType = None) -> None:

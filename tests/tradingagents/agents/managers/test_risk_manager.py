@@ -1,6 +1,6 @@
-from unittest.mock import MagicMock
+# ruff: noqa: S101 - assert is expected in tests
 
-import pytest
+from unittest.mock import MagicMock
 
 from tradingagents.agents.managers.risk_manager import create_risk_manager
 
@@ -152,7 +152,7 @@ def test_risk_manager_uses_memory(mock_openai_client, mock_llm_response):
         },
     }
 
-    result = node(state)
+    node(state)
 
     mock_memory.get_memories.assert_called_once()
 

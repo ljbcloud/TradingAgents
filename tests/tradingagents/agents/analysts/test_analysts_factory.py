@@ -1,6 +1,6 @@
-from unittest.mock import MagicMock
+# ruff: noqa: S101 - assert is expected in tests
 
-import pytest
+from unittest.mock import MagicMock
 
 from tradingagents.agents.analysts.fundamentals_analyst import (
     create_fundamentals_analyst,

@@ -1,6 +1,6 @@
-from unittest.mock import MagicMock
+# ruff: noqa: S101 - assert is expected in tests
 
-import pytest
+from unittest.mock import MagicMock
 
 from tradingagents.agents.risk_mgmt.aggressive_debator import create_aggressive_debator
 from tradingagents.agents.risk_mgmt.conservative_debator import (
@@ -252,7 +252,7 @@ def test_all_debators_use_trader_decision(mock_openai_client, mock_llm_response)
 
     trader_decision = "FINAL TRANSACTION PROPOSAL: **BUY**"
 
-    for debator_func, name in [
+    for debator_func, _name in [
         (create_aggressive_debator, "Aggressive"),
         (create_conservative_debator, "Conservative"),
         (create_neutral_debator, "Neutral"),

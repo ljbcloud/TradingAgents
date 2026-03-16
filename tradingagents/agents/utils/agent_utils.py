@@ -14,10 +14,12 @@ from .fundamental_data_tools import (
     get_income_statement,
 )
 from .news_data_tools import get_global_news, get_insider_transactions, get_news
+from .sentiment_tools import get_bitcoin_fear_greed_index
 from .technical_indicators_tools import get_indicators
 
 __all__ = [
     "get_balance_sheet",
+    "get_bitcoin_fear_greed_index",
     "get_cashflow",
     "get_crypto_candles",
     "get_crypto_orderbook",

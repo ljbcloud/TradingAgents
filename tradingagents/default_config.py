@@ -31,6 +31,7 @@ DEFAULT_CONFIG = {
         "news_data": "yfinance",  # Options: alpha_vantage, yfinance
         "crypto_apis": "ccxt",  # Options: ccxt (Coinbase, Binance, etc.)
         "crypto_fundamentals": "coingecko,defillama",  # Options: coingecko, defillama
+        "crypto_sentiment": "alternative_me",  # Options: alternative_me (Fear & Greed Index)
     },
     # Tool-level configuration (takes precedence over category-level)
     "tool_vendors": {

@@ -1,3 +1,5 @@
+# ruff: noqa: S101 - assert is expected in tests
+
 from unittest.mock import MagicMock
 
 import pytest

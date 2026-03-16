@@ -1,6 +1,9 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from tradingagents.agents.utils.agent_utils import get_news
+from tradingagents.agents.utils.agent_utils import (
+    get_bitcoin_fear_greed_index,
+    get_news,
+)
 
 
 def create_social_media_analyst(llm):
@@ -11,6 +14,7 @@ def create_social_media_analyst(llm):
 
         tools = [
             get_news,
+            get_bitcoin_fear_greed_index,
         ]
 
         system_message = (

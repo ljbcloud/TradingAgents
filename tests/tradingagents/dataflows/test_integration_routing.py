@@ -93,19 +93,32 @@ class TestCategoryFallbackVendor:
         assert vendor == "yfinance"
 
     def test_category_vendor_default_is_yfinance(self):
-        """Default category vendor should be yfinance when properly configured."""
+        """Category vendor should match configured defaults for all categories."""
         config.set_config({
             "data_vendors": {
                 "core_stock_apis": "yfinance",
                 "technical_indicators": "yfinance",
                 "fundamental_data": "yfinance",
                 "news_data": "yfinance",
+                "crypto_apis": "ccxt",
+                "crypto_fundamentals": "coingecko,defillama",
+                "crypto_sentiment": "alternative_me",
             },
         })
 
+        expected = {
+            "core_stock_apis": "yfinance",
+            "technical_indicators": "yfinance",
+            "fundamental_data": "yfinance",
+            "news_data": "yfinance",
+            "crypto_apis": "ccxt",
+            "crypto_fundamentals": "coingecko,defillama",
+            "crypto_sentiment": "alternative_me",
+        }
+
         for category in TOOLS_CATEGORIES:
             vendor = get_vendor(category)
-            assert vendor == "yfinance"
+            assert vendor == expected[category]
 
     def test_category_vendor_can_be_changed(self):
         """Category vendor can be changed via config."""
@@ -139,6 +152,9 @@ class TestCategoryFallbackVendor:
                 "technical_indicators": "yfinance",
                 "fundamental_data": "yfinance",
                 "news_data": "yfinance",
+                "crypto_apis": "ccxt",
+                "crypto_fundamentals": "coingecko,defillama",
+                "crypto_sentiment": "alternative_me",
             },
         }
         config.set_config(full_config)
@@ -262,10 +278,32 @@ class TestKnownMethodCategoryMappings:
                 )
 
     def test_all_vendor_methods_have_both_vendors(self):
-        """All methods should have implementations for both vendors."""
-        for method, vendors in VENDOR_METHODS.items():
-            assert "alpha_vantage" in vendors, f"Missing alpha_vantage for {method}"
-            assert "yfinance" in vendors, f"Missing yfinance for {method}"
+        stock_categories = {
+            "core_stock_apis",
+            "technical_indicators",
+            "fundamental_data",
+            "news_data",
+        }
+
+        for category, info in TOOLS_CATEGORIES.items():
+            for method in info["tools"]:
+                vendors = VENDOR_METHODS[method]
+                if category in stock_categories:
+                    assert "alpha_vantage" in vendors, (
+                        f"Missing alpha_vantage for {method}"
+                    )
+                    assert "yfinance" in vendors, f"Missing yfinance for {method}"
+                elif category == "crypto_apis":
+                    assert "ccxt" in vendors, f"Missing ccxt for {method}"
+                elif category == "crypto_fundamentals":
+                    assert vendors, f"Missing vendors for {method}"
+                elif category == "crypto_sentiment":
+                    assert "alternative_me" in vendors, (
+                        f"Missing alternative_me for {method}"
+                    )
+                else:
+                    msg = f"Unknown category '{category}' in TOOLS_CATEGORIES"
+                    raise AssertionError(msg)
 
     def test_unknown_method_raises_value_error(self):
         """Unknown method should raise ValueError."""

@@ -1,6 +1,6 @@
-from unittest.mock import MagicMock
+# ruff: noqa: S101 - assert is expected in tests
 
-import pytest
+from unittest.mock import MagicMock
 
 from tradingagents.graph.signal_processing import SignalProcessor
 
@@ -110,12 +110,12 @@ def test_process_signal_complex_parsing():
     - 50-day moving average crossed above 200-day
     - RSI indicates strong momentum
     - Volume is increasing
-    
+
     Fundamental Analysis:
     - Earnings beat expectations
     - Revenue growth of 25% YoY
     - Strong cash position
-    
+
     Recommendation:
     Based on the convergence of technical and fundamental indicators,
     we recommend an aggressive BUY position.

@@ -1,7 +1,8 @@
+# ruff: noqa: S101 - assert is expected in tests
+
 from unittest.mock import MagicMock
 
 import pytest
-from langchain_core.exceptions import LangChainException
 
 from tradingagents.agents.analysts.market_analyst import create_market_analyst
 

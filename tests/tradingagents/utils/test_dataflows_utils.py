@@ -1,11 +1,11 @@
+# ruff: noqa: S101 - assert is expected in tests
+
 from datetime import datetime
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
 from tradingagents.dataflows.utils import (
-    decorate_all_methods,
     get_current_date,
     get_next_weekday,
     save_output,
@@ -54,7 +54,7 @@ def test_get_next_weekday_handles_wednesday():
 
 
 def test_get_next_weekday_invalid_format():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"(time data|unconverted data remains)"):
         get_next_weekday("2024-01-32")
 
 

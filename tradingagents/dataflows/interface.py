@@ -47,6 +47,7 @@ from .alpha_vantage import (
     get_stock as get_alpha_vantage_stock,
 )
 from .alpha_vantage_common import AlphaVantageRateLimitError
+from .alternative_me import get_bitcoin_fear_greed_index
 from .ccxt_common import CCXTRateLimitError
 from .ccxt_crypto import (
     get_crypto_candles,
@@ -127,6 +128,12 @@ TOOLS_CATEGORIES = {
             "get_crypto_protocol_yields",
         ],
     },
+    "crypto_sentiment": {
+        "description": "Cryptocurrency sentiment indicators (Fear & Greed Index)",
+        "tools": [
+            "get_bitcoin_fear_greed_index",
+        ],
+    },
 }
 
 VENDOR_LIST = [
@@ -135,6 +142,7 @@ VENDOR_LIST = [
     "ccxt",
     "coingecko",
     "defillama",
+    "alternative_me",
 ]
 
 # Mapping of methods to their vendor-specific implementations
@@ -201,6 +209,10 @@ VENDOR_METHODS: dict[str, dict[str, Callable[..., dict[str, str] | str]]] = {
     },
     "get_crypto_protocol_yields": {
         "defillama": get_crypto_protocol_yields,
+    },
+    # crypto_sentiment
+    "get_bitcoin_fear_greed_index": {
+        "alternative_me": get_bitcoin_fear_greed_index,
     },
 }
 

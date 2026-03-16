@@ -1,4 +1,4 @@
-import pytest
+# ruff: noqa: S101 - assert is expected in tests
 
 from tradingagents.agents.utils.memory import FinancialSituationMemory
 

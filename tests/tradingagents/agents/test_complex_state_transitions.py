@@ -1,6 +1,6 @@
-from unittest.mock import MagicMock
+# ruff: noqa: S101 - assert is expected in tests
 
-import pytest
+from unittest.mock import MagicMock
 
 from tradingagents.agents.managers.research_manager import create_research_manager
 from tradingagents.agents.managers.risk_manager import create_risk_manager
@@ -134,7 +134,7 @@ def test_investment_debate_memory_persistence(mock_openai_client, mock_llm_respo
     assert mock_memory.get_memories.call_count >= 1
 
     state = {**state, **result1}
-    result2 = bear_node(state)
+    bear_node(state)
     assert mock_memory.get_memories.call_count >= 2
 
 
@@ -439,11 +439,9 @@ def test_trader_plan_flows_through_both_debates(mock_openai_client, mock_llm_res
 
     # Research manager creates initial investment plan
     state.update(research_manager_node(state))
-    initial_plan = state["investment_plan"]
 
     # Trader creates refined plan
     state.update(trader_node(state))
-    trader_plan = state["trader_investment_plan"]
 
     # Risk manager uses trader's plan
     state.update(risk_manager_node(state))

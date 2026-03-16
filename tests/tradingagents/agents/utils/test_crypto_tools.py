@@ -1,5 +1,3 @@
-# ruff: noqa: S101 - assert is expected in tests
-
 import pytest
 
 from tradingagents.agents.utils.crypto_tools import (
