@@ -58,13 +58,24 @@ SYMBOL_TO_ID: dict[str, str] = {
 def _get_coingecko_id(symbol: str) -> str | None:
     """Map cryptocurrency symbol to CoinGecko coin ID.
 
+    Handles various symbol formats:
+    - Plain symbols: BTC, ETH
+    - Pair formats: BTC-USD, ETH/USDT, SOL-USD
+
     Args:
-        symbol: Cryptocurrency symbol (e.g., BTC, ETH)
+        symbol: Cryptocurrency symbol (e.g., BTC, ETH, BTC-USD, ETH/USDT)
 
     Returns:
         CoinGecko coin ID or None if not found in mapping
     """
     normalized = symbol.upper().strip()
+
+    # Extract base currency from pair formats (e.g., "BTC-USD" -> "BTC", "ETH/USDT" -> "ETH")
+    for separator in ("/", "-"):
+        if separator in normalized:
+            normalized = normalized.split(separator)[0]
+            break
+
     return SYMBOL_TO_ID.get(normalized)
 
 
