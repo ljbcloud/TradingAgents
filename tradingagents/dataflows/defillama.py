@@ -17,6 +17,7 @@ defillama_logger = get_logger("defillama")
 
 DEFILLAMA_TVL_BASE_URL = "https://api.llama.fi"
 DEFILLAMA_YIELDS_BASE_URL = "https://yields.llama.fi"
+DEFILLAMA_CHAINS_URL = "https://api.llama.fi/v2/chains"
 REQUEST_TIMEOUT = 30
 
 
@@ -68,21 +69,49 @@ def get_crypto_protocol_tvl(
             "",
         ))
 
-        current_tvl = data.get("tvl", 0)
+        # Handle new API structure: tvl is now a list of historical data points
+        tvl_data = data.get("tvl", [])
+        if isinstance(tvl_data, list) and tvl_data:
+            # Extract current TVL from the last historical data point
+            current_tvl = tvl_data[-1].get("totalLiquidityUSD", 0)
+        else:
+            # Fallback for old API structure or empty data
+            current_tvl = tvl_data if isinstance(tvl_data, int | float) else 0
+
         lines.extend((
             "## TVL Metrics",
             f"Current TVL: ${current_tvl:,.2f}" if current_tvl else "Current TVL: N/A",
         ))
 
-        tvl_change_1d = data.get("change_1d", 0)
-        tvl_change_7d = data.get("change_7d", 0)
+        # Calculate TVL changes from historical data (new API doesn't provide change_1d/change_7d)
+        tvl_change_1d = None
+        tvl_change_7d = None
+        if isinstance(tvl_data, list) and len(tvl_data) >= 2:
+            # Find entries from ~1 day and ~7 days ago (86400s = 1 day)
+            current_time = tvl_data[-1].get("date", 0)
+            current_tvl_value = tvl_data[-1].get("totalLiquidityUSD", 0)
+
+            for entry in reversed(tvl_data):
+                time_diff = current_time - entry.get("date", 0)
+                tvl_value = entry.get("totalLiquidityUSD", 0)
+                if time_diff >= 86400 and tvl_change_1d is None and tvl_value > 0:
+                    tvl_change_1d = ((current_tvl_value - tvl_value) / tvl_value) * 100
+                if time_diff >= 86400 * 7 and tvl_change_7d is None and tvl_value > 0:
+                    tvl_change_7d = ((current_tvl_value - tvl_value) / tvl_value) * 100
+                    break
+
         lines.extend((
-            f"TVL Change 24h: {tvl_change_1d:+.2f}%",
-            f"TVL Change 7d: {tvl_change_7d:+.2f}%",
+            f"TVL Change 24h: {tvl_change_1d:+.2f}%"
+            if tvl_change_1d is not None
+            else "TVL Change 24h: N/A",
+            f"TVL Change 7d: {tvl_change_7d:+.2f}%"
+            if tvl_change_7d is not None
+            else "TVL Change 7d: N/A",
             "",
         ))
 
-        chain_tvl = data.get("chainTvl", {})
+        # Use currentChainTvls (new API) or fall back to chainTvl (old API)
+        chain_tvl = data.get("currentChainTvls") or data.get("chainTvl", {})
         if chain_tvl:
             lines.append("## TVL by Chain")
             sorted_chains = sorted(chain_tvl.items(), key=itemgetter(1), reverse=True)
@@ -249,7 +278,119 @@ def get_crypto_protocol_yields(
         ) from e
 
 
+def get_crypto_chain_tvl(
+    chain: Annotated[
+        str, "Blockchain network name like ethereum, arbitrum, solana, polygon"
+    ],
+) -> str:
+    """Fetch Total Value Locked (TVL) for a blockchain network.
+
+    Retrieves TVL data for a specific blockchain/network from DeFiLlama.
+    This is different from protocol TVL - it shows the total value locked
+    across all DeFi protocols on that chain.
+
+    Args:
+        chain: Blockchain network name (e.g., 'ethereum', 'arbitrum', 'solana', 'polygon')
+
+    Returns:
+        Formatted string with chain TVL information including:
+        - Chain name and TVL
+        - Chain ID and token symbol
+        - Comparison ranking among all chains
+
+    Raises:
+        VendorError: If the API request fails or chain is not found
+    """
+    defillama_logger.info("Fetching chain TVL data for: %s", chain)
+
+    try:
+        response = requests.get(DEFILLAMA_CHAINS_URL, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+
+        chains_data = response.json()
+
+        if not chains_data:
+            msg = "No chain data available from DeFiLlama"
+            defillama_logger.warning(msg)
+            return msg
+
+        chain_lower = chain.lower().strip()
+        target_chain = None
+
+        for c in chains_data:
+            if c.get("name", "").lower() == chain_lower:
+                target_chain = c
+                break
+
+        if not target_chain:
+            available = [c.get("name", "") for c in chains_data[:10]]
+            msg = f"Chain not found: {chain}. Available chains include: {', '.join(available)}..."
+            defillama_logger.warning(msg)
+            return msg
+
+        sorted_chains = sorted(
+            [c for c in chains_data if c.get("tvl")],
+            key=lambda x: x.get("tvl", 0),
+            reverse=True,
+        )
+        rank = next(
+            (
+                i + 1
+                for i, c in enumerate(sorted_chains)
+                if c.get("name", "").lower() == chain_lower
+            ),
+            "N/A",
+        )
+
+        chain_name = target_chain.get("name", chain)
+        tvl = target_chain.get("tvl", 0) or 0
+        chain_id = target_chain.get("chainId", "N/A")
+        token_symbol = target_chain.get("tokenSymbol", "N/A")
+        gecko_id = target_chain.get("gecko_id", "N/A")
+
+        lines = [
+            f"# TVL Data for {chain_name}",
+            "",
+            "## Chain Overview",
+            f"Name: {chain_name}",
+            f"Chain ID: {chain_id}",
+            f"Native Token: {token_symbol}",
+            f"TVL Rank: #{rank}",
+            "",
+            "## TVL Metrics",
+            f"Total Value Locked: ${tvl:,.2f}" if tvl else "Total Value Locked: N/A",
+            "",
+            "## Additional Info",
+            f"CoinGecko ID: {gecko_id}",
+        ]
+
+        defillama_logger.debug("Retrieved chain TVL data for %s", chain)
+        return "\n".join(lines)
+
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Network error fetching chain TVL for {chain}"
+        defillama_logger.exception(error_msg)
+        raise VendorError(
+            error_msg,
+            function="get_crypto_chain_tvl",
+            vendor="defillama",
+            params={"chain": chain},
+            original_error=e,
+        ) from e
+    except Exception as e:
+        error_msg = f"Error fetching chain TVL for {chain}"
+        defillama_logger.exception(error_msg)
+        raise VendorError(
+            error_msg,
+            function="get_crypto_chain_tvl",
+            vendor="defillama",
+            params={"chain": chain},
+            original_error=e,
+        ) from e
+
+
 __all__ = [
+    "get_crypto_chain_tvl",
     "get_crypto_protocol_tvl",
     "get_crypto_protocol_yields",
 ]
