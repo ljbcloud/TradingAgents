@@ -935,11 +935,60 @@ def display_complete_report(final_state):
             )
 
 
-def update_research_team_status(status):
-    """Update status for research team members (not Trader)."""
-    research_team = ["Bull Researcher", "Bear Researcher", "Research Manager"]
-    for agent in research_team:
-        message_buffer.update_agent_status(agent, status)
+def update_research_team_statuses(debate_state):
+    """Update research team statuses incrementally based on debate state.
+
+    Logic:
+    - Bull has history = Bull completed, Bear in_progress
+    - Bear has history = Bear completed, Manager in_progress
+    - Judge has decision = All completed
+    """
+    bull_hist = debate_state.get("bull_history", "").strip()
+    bear_hist = debate_state.get("bear_history", "").strip()
+    judge = debate_state.get("judge_decision", "").strip()
+
+    if judge:
+        message_buffer.update_agent_status("Bull Researcher", "completed")
+        message_buffer.update_agent_status("Bear Researcher", "completed")
+        message_buffer.update_agent_status("Research Manager", "completed")
+    elif bear_hist:
+        message_buffer.update_agent_status("Bull Researcher", "completed")
+        message_buffer.update_agent_status("Bear Researcher", "completed")
+        message_buffer.update_agent_status("Research Manager", "in_progress")
+    elif bull_hist:
+        message_buffer.update_agent_status("Bull Researcher", "completed")
+        message_buffer.update_agent_status("Bear Researcher", "in_progress")
+
+
+RISK_TEAM_ORDER = ["Aggressive Analyst", "Conservative Analyst", "Neutral Analyst"]
+
+
+def update_risk_team_statuses(risk_state):
+    """Update risk team statuses incrementally based on debate state.
+
+    Logic:
+    - Each analyst transitions: in_progress (when they have content) -> completed
+    - Portfolio Manager: in_progress when judge decision arrives, then completed
+    """
+    agg_hist = risk_state.get("aggressive_history", "").strip()
+    con_hist = risk_state.get("conservative_history", "").strip()
+    neu_hist = risk_state.get("neutral_history", "").strip()
+    judge = risk_state.get("judge_decision", "").strip()
+
+    if judge:
+        message_buffer.update_agent_status("Aggressive Analyst", "completed")
+        message_buffer.update_agent_status("Conservative Analyst", "completed")
+        message_buffer.update_agent_status("Neutral Analyst", "completed")
+        message_buffer.update_agent_status("Portfolio Manager", "completed")
+    else:
+        if agg_hist:
+            message_buffer.update_agent_status("Aggressive Analyst", "in_progress")
+        if con_hist:
+            message_buffer.update_agent_status("Aggressive Analyst", "completed")
+            message_buffer.update_agent_status("Conservative Analyst", "in_progress")
+        if neu_hist:
+            message_buffer.update_agent_status("Conservative Analyst", "completed")
+            message_buffer.update_agent_status("Neutral Analyst", "in_progress")
 
 
 # Ordered list of analysts for status transitions
@@ -969,7 +1018,10 @@ def update_analyst_statuses(message_buffer, chunk):
     selected = message_buffer.selected_analysts
     found_active = False
 
-    for analyst_key in ANALYST_ORDER:
+    # ANALYST_ORDER is a list of tuples: (display_name, AnalystType)
+    # Unpack to get the analyst type enum, then use its value as the key
+    for _, analyst_type in ANALYST_ORDER:
+        analyst_key = analyst_type.value  # e.g., "market", "social", etc.
         if analyst_key not in selected:
             continue
 
@@ -1250,9 +1302,8 @@ def run_analysis():
                 bear_hist = debate_state.get("bear_history", "").strip()
                 judge = debate_state.get("judge_decision", "").strip()
 
-                # Only update status when there's actual content
-                if bull_hist or bear_hist:
-                    update_research_team_status("in_progress")
+                update_research_team_statuses(debate_state)
+
                 if bull_hist:
                     message_buffer.update_report_section(
                         "investment_plan", f"### Bull Researcher Analysis\n{bull_hist}"
@@ -1265,7 +1316,6 @@ def run_analysis():
                     message_buffer.update_report_section(
                         "investment_plan", f"### Research Manager Decision\n{judge}"
                     )
-                    update_research_team_status("completed")
                     message_buffer.update_agent_status("Trader", "in_progress")
 
             # Trading Team
@@ -1287,62 +1337,28 @@ def run_analysis():
                 neu_hist = risk_state.get("neutral_history", "").strip()
                 judge = risk_state.get("judge_decision", "").strip()
 
+                update_risk_team_statuses(risk_state)
+
                 if agg_hist:
-                    if (
-                        message_buffer.agent_status.get("Aggressive Analyst")
-                        != "completed"
-                    ):
-                        message_buffer.update_agent_status(
-                            "Aggressive Analyst", "in_progress"
-                        )
                     message_buffer.update_report_section(
                         "final_trade_decision",
                         f"### Aggressive Analyst Analysis\n{agg_hist}",
                     )
                 if con_hist:
-                    if (
-                        message_buffer.agent_status.get("Conservative Analyst")
-                        != "completed"
-                    ):
-                        message_buffer.update_agent_status(
-                            "Conservative Analyst", "in_progress"
-                        )
                     message_buffer.update_report_section(
                         "final_trade_decision",
                         f"### Conservative Analyst Analysis\n{con_hist}",
                     )
                 if neu_hist:
-                    if (
-                        message_buffer.agent_status.get("Neutral Analyst")
-                        != "completed"
-                    ):
-                        message_buffer.update_agent_status(
-                            "Neutral Analyst", "in_progress"
-                        )
                     message_buffer.update_report_section(
                         "final_trade_decision",
                         f"### Neutral Analyst Analysis\n{neu_hist}",
                     )
-                if (
-                    judge
-                    and message_buffer.agent_status.get("Portfolio Manager")
-                    != "completed"
-                ):
-                    message_buffer.update_agent_status(
-                        "Portfolio Manager", "in_progress"
-                    )
+                if judge:
                     message_buffer.update_report_section(
                         "final_trade_decision",
                         f"### Portfolio Manager Decision\n{judge}",
                     )
-                    message_buffer.update_agent_status(
-                        "Aggressive Analyst", "completed"
-                    )
-                    message_buffer.update_agent_status(
-                        "Conservative Analyst", "completed"
-                    )
-                    message_buffer.update_agent_status("Neutral Analyst", "completed")
-                    message_buffer.update_agent_status("Portfolio Manager", "completed")
 
             # Update the display
             update_display(layout, stats_handler=stats_handler, start_time=start_time)
