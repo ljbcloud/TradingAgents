@@ -24,6 +24,7 @@ from rich.text import Text
 
 from cli.announcements import display_announcements, fetch_announcements
 from cli.stats_handler import StatsCallbackHandler
+from cli.ticker_validation import get_validated_ticker
 from cli.utils import (
     ANALYST_ORDER,
     ask_gemini_thinking_config,
@@ -646,13 +647,19 @@ def get_user_selections():
     }
 
 
-def get_ticker():
-    """Get ticker symbol from user input.
+def get_ticker() -> str:
+    """Get ticker symbol from user input with validation.
+
+    Validates the ticker using yfinance before returning. Handles:
+    - Invalid tickers: Shows error and exits
+    - Ambiguous tickers: Shows selection dialog
+    - Network errors: Falls back gracefully with warning
 
     Returns:
-        The ticker symbol entered by the user.
+        The validated ticker symbol in uppercase.
     """
-    return typer.prompt("", default="SPY")
+    raw_input = typer.prompt("", default="SPY")
+    return get_validated_ticker(raw_input)
 
 
 def get_analysis_date():

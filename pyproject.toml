@@ -145,8 +145,8 @@ unfixable = [
 "tradingagents/dataflows/alpha_vantage.py" = ["F401"]
 "tradingagents/dataflows/ccxt_crypto.py" = ["DTZ006", "PERF401"]
 "cli/**/*.py" = ["PD901"]
+"tests/**/*.py" = ["S101"]
 "tests/tradingagents/dataflows/test_ccxt_common.py" = ["SIM117"]
-"tests/tradingagents/agents/utils/test_crypto_tools.py" = ["S101"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
