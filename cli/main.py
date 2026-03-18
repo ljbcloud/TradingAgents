@@ -1131,7 +1131,7 @@ def format_tool_args(args, max_length=80) -> str:
     return result
 
 
-def run_analysis():
+def run_analysis(use_tui: bool = False):
     # First get all user selections
     selections = get_user_selections()
 
@@ -1415,8 +1415,13 @@ def run_analysis():
 
 
 @app.command()
-def analyze():
-    run_analysis()
+def analyze(
+    use_tui: bool = typer.Option(
+        False, "--tui", help="Use new scrollable Textual interface"
+    ),
+):
+    """Run trading analysis with optional Textual TUI."""
+    run_analysis(use_tui=use_tui)
 
 
 if __name__ == "__main__":
