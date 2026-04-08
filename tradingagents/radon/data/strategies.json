@@ -1,0 +1,92 @@
+[
+  {
+    "id": "dark-pool-flow",
+    "name": "Dark Pool Flow",
+    "status": "active",
+    "description": "Exploit institutional dark pool / OTC positioning signals that haven't yet moved the lit market. Buy ATM/OTM options on mid/large-cap stocks where sustained directional dark pool flow confirms accumulation or distribution. News catalysts (buybacks, M&A, earnings) provide context for interpreting flow patterns.",
+    "edge": "Institutional flow detection — passive buying/selling in dark pools precedes lit price moves by days to weeks. Material catalysts like buybacks explain structural buying that might otherwise appear as noise.",
+    "instruments": "ATM/OTM calls or puts, 2-6 week expiry. Bull/bear vertical spreads for defined risk.",
+    "hold_period": "2-6 weeks",
+    "win_rate": "20-40%",
+    "target_rr": "≥2:1",
+    "risk_type": "defined",
+    "commands": ["scan", "evaluate [TICKER]", "discover"],
+    "command_details": {
+      "scan": "Quick dark pool ranking — fetches 5-day dark pool data only, skips options flow for speed. During market hours, data is automatically interpolated (partial today blended with prior days). Use to identify candidates.",
+      "evaluate": "Full 7-milestone analysis — dark pool + options flow + OI changes + news/catalysts + analyst ratings. During market hours, dark pool data is automatically interpolated. Detects conflicts between dark pool and options flow. Use for trade decisions.",
+      "discover": "Market-wide candidate discovery — scans flow alerts across all tickers, excludes watchlist/portfolio. Dark pool data interpolated during market hours."
+    },
+    "doc": "docs/strategies.md"
+  },
+  {
+    "id": "leap-iv-mispricing",
+    "name": "LEAP IV Mispricing",
+    "status": "active",
+    "description": "Buy long-dated options where implied volatility is significantly below realized volatility. Profits from IV expansion as the market reprices the option toward fair vol.",
+    "edge": "Single-asset vol mispricing — HV20/HV60 exceeds LEAP IV by ≥15 points, IV rank below 50th percentile.",
+    "instruments": "LEAP calls (6-18 month expiry), 30-50Δ. Defined risk = premium paid.",
+    "hold_period": "Weeks to 9 months",
+    "win_rate": "40-55%",
+    "target_rr": "≥2:1",
+    "risk_type": "defined",
+    "commands": ["leap-scan [TICKERS]", "leap-scan --preset [PRESET]"],
+    "doc": "docs/strategies.md"
+  },
+  {
+    "id": "garch-convergence",
+    "name": "GARCH Convergence Spreads",
+    "status": "active",
+    "description": "Exploit differential GARCH repricing speed across correlated assets during vol regime shifts. When a catalyst elevates realized vol in a sector, components reprice IV at different rates — buy the lagger's underpriced options.",
+    "edge": "Cross-asset vega arbitrage — GARCH lag between correlated pairs creates measurable IV divergence (>1σ from 60-day mean).",
+    "instruments": "30-40Δ calls on the lagger, 3-6 month expiry. Optional short vega on the leader.",
+    "hold_period": "2-8 weeks",
+    "win_rate": "50-65%",
+    "target_rr": "≥2:1",
+    "risk_type": "defined",
+    "commands": ["garch-convergence [TICKERS]", "garch-convergence --preset [PRESET]"],
+    "doc": "docs/strategy-garch-convergence.md"
+  },
+  {
+    "id": "risk-reversal",
+    "name": "Risk Reversal",
+    "status": "active",
+    "description": "Exploit IV skew by selling OTM puts and buying OTM calls (bullish) or vice versa (bearish). Costless or credit-generating directional exposure that profits from the structural put/call IV imbalance.",
+    "edge": "IV skew — OTM puts trade at significantly higher IV than equivalent-delta OTM calls. Selling the rich side funds the cheap side.",
+    "instruments": "Sell OTM put (25-50Δ) + Buy OTM call (25-50Δ), 2-8 week expiry.",
+    "hold_period": "2-8 weeks",
+    "win_rate": "30-50%",
+    "target_rr": "Asymmetric (unlimited upside, large downside)",
+    "risk_type": "undefined",
+    "manager_override": true,
+    "commands": ["risk-reversal [TICKER]"],
+    "doc": "docs/strategies.md"
+  },
+  {
+    "id": "vcg",
+    "name": "Volatility-Credit Gap (VCG-R)",
+    "status": "active",
+    "description": "Detects when VIX is elevated (>28) but credit (HYG) hasn't repriced — a dangerous divergence that resolves violently. The VIX gate is inverted from v1 (was <40, now >28). VVIX is a severity amplifier (Tier 1/2/3), no longer a hard gate. HDR and credit 5d gate removed. Fires rarely (~0.26/year) with high conviction. Counter-signal BOUNCE fires when VCG < -3.5 (credit overshot).",
+    "edge": "VIX/VVIX vs HYG regression residual identifies unresolved vol-credit divergence. RO: VIX>28 + VCG>2.5σ. EDR watch: VIX>25 + VCG>2.0σ. Event capture rate: 71% vs 29% for v1 (2018-2025 backtest).",
+    "instruments": "HYG puts (ATM/OTM, 1-3 week expiry). Bear put spreads on HYG/JNK for defined risk. Tier 1 = max hedging, Tier 2 = standard, EDR = half-Kelly.",
+    "hold_period": "1-5 days",
+    "win_rate": "N/A (overlay signal, ~71% event capture rate)",
+    "target_rr": "Portfolio hedge — sized relative to credit exposure",
+    "risk_type": "defined",
+    "commands": ["vcg"],
+    "doc": "docs/strategies.md"
+  },
+  {
+    "id": "cri",
+    "name": "Crash Risk Index (CRI)",
+    "status": "active",
+    "description": "Detect CTA deleveraging cascades by monitoring VIX/VVIX rising, COR1M implied correlation spiking, and SPX breaking below 100-day MA. Systematic CTA funds (~$400B AUM) use vol-targeting — when realized vol doubles, they halve equity exposure mechanically over 3-5 days.",
+    "edge": "CTA mechanical selling is predictable and time-bound. Convergence of VIX, VVIX, COR1M implied correlation, and momentum signals precedes forced deleveraging cascades.",
+    "instruments": "SPY puts (ATM/OTM, 2-4 week expiry). Bear put spreads on SPY for defined risk. Tail hedges.",
+    "hold_period": "3-5 days",
+    "win_rate": "N/A (overlay signal)",
+    "target_rr": "Portfolio hedge — sized relative to equity exposure",
+    "risk_type": "defined",
+    "commands": ["cri-scan"],
+    "doc": "docs/strategies.md"
+  }
+]

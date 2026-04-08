@@ -47,6 +47,15 @@ dev = [
     "bandit>=1.7.0",
     "mypy>=1.0.0",
 ]
+radon = [
+    "ib_insync>=0.9.86",
+    "httpx>=0.24.0",
+    "numpy>=1.24.0",
+]
+radon-full = [
+    "tradingagents[radon]",
+    "playwright>=1.40.0",
+]
 
 [project.scripts]
 tradingagents = "cli.main:app"
