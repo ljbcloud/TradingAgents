@@ -152,6 +152,12 @@ class RadonEvaluator:
                 result.status = ValidationStatus.FAIL
                 result.decision = TradeDecision.NO_TRADE
                 result.milestones = list(milestones.values())
+                result.gates = {
+                    "convexity": False,
+                    "edge": False,
+                    "risk_management": False,
+                    "no_naked_shorts": False,
+                }
                 result.summary = f"M1 Ticker Validation failed: {m1.reason}"
                 logger.warning("M1 failed for %s: %s", ticker, m1.reason)
                 return result
@@ -159,6 +165,12 @@ class RadonEvaluator:
             milestones["M1"] = MilestoneResult(
                 milestone="M1", passed=False, reason="M1 result missing"
             )
+            result.gates = {
+                "convexity": False,
+                "edge": False,
+                "risk_management": False,
+                "no_naked_shorts": False,
+            }
             result.status = ValidationStatus.FAIL
             result.decision = TradeDecision.NO_TRADE
             result.milestones = list(milestones.values())
@@ -183,6 +195,16 @@ class RadonEvaluator:
         m4 = self._milestone_m4_edge_determination(ticker, milestones)
         milestones["M4"] = m4
         if not m4.passed:
+            result.gates = {
+                "convexity": milestones.get(
+                    "M5", MilestoneResult(milestone="M5", passed=False)
+                ).passed,
+                "edge": False,
+                "risk_management": milestones.get(
+                    "M6", MilestoneResult(milestone="M6", passed=False)
+                ).passed,
+                "no_naked_shorts": False,
+            }
             result.status = ValidationStatus.FAIL
             result.decision = TradeDecision.NO_TRADE
             result.milestones = list(milestones.values())
@@ -194,6 +216,18 @@ class RadonEvaluator:
         m5 = self._milestone_m5_structure_proposal(ticker, milestones)
         milestones["M5"] = m5
         if not m5.passed:
+            result.gates = {
+                "convexity": False,
+                "edge": milestones.get(
+                    "M4", MilestoneResult(milestone="M4", passed=False)
+                ).passed,
+                "risk_management": milestones.get(
+                    "M6", MilestoneResult(milestone="M6", passed=False)
+                ).passed,
+                "no_naked_shorts": self._check_no_naked_shorts(
+                    trade_decision, milestones
+                ),
+            }
             result.status = ValidationStatus.FAIL
             result.decision = TradeDecision.NO_TRADE
             result.milestones = list(milestones.values())
@@ -211,6 +245,18 @@ class RadonEvaluator:
 
         # Aggregate result
         result.milestones = list(milestones.values())
+        result.gates = {
+            "convexity": milestones.get(
+                "M5", MilestoneResult(milestone="M5", passed=False)
+            ).passed,
+            "edge": milestones.get(
+                "M4", MilestoneResult(milestone="M4", passed=False)
+            ).passed,
+            "risk_management": milestones.get(
+                "M6", MilestoneResult(milestone="M6", passed=False)
+            ).passed,
+            "no_naked_shorts": self._check_no_naked_shorts(trade_decision, milestones),
+        }
         result.status = ValidationStatus.PASS
         result.decision = TradeDecision.TRADE
         result.summary = "All milestones passed"
@@ -889,6 +935,29 @@ class RadonEvaluator:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_no_naked_shorts(
+        trade_decision: str, milestones: dict[str, MilestoneResult]
+    ) -> bool:
+        """Check whether the trade avoids a naked-short risk.
+
+        - BUY decisions can never be naked shorts → always ``True``.
+        - SELL decisions pass only when M5 (Structure Proposal) passed with
+          a defined risk/reward ratio, proving a hedged or defined-risk
+          structure exists.
+        - Any other decision string defaults to ``True`` (conservative).
+        """
+        if trade_decision.upper() != "SELL":
+            return True
+
+        m5 = milestones.get("M5")
+        if m5 is None or not m5.passed:
+            return False
+
+        # M5 must contain risk/reward data to prove defined risk
+        rr = m5.data.get("estimated_risk_reward")
+        return rr is not None and rr > 0
 
     @staticmethod
     def _compute_sustained_days(

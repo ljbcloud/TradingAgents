@@ -159,6 +159,15 @@ unfixable = [
 "tradingagents/dataflows/ccxt_crypto.py" = ["DTZ006", "PERF401"]
 "cli/**/*.py" = ["PD901"]
 "tests/**/*.py" = ["S101"]
+"tests/tradingagents/radon/**/*.py" = [
+    "E402",     # module level import not at top (section-based imports)
+    "FBT003",   # boolean positional value in @patch() calls
+    "PLR0904",  # too many public methods in test classes
+    "PLC2701",  # private name import for testing internals
+    "PT012",    # pytest.raises with multi-statement body
+    "S105",     # hardcoded password in test fixtures
+    "S106",     # hardcoded password argument in test fixtures
+]
 "tests/tradingagents/dataflows/test_ccxt_common.py" = ["SIM117"]
 
 [tool.pytest.ini_options]
