@@ -9,6 +9,7 @@ from tradingagents.agents import *
 from tradingagents.agents.utils.agent_states import AgentState
 
 from .conditional_logic import ConditionalLogic
+from .radon_validation import create_radon_validation_node
 
 
 class GraphSetup:
@@ -122,6 +123,7 @@ class GraphSetup:
         workflow.add_node("Neutral Analyst", neutral_analyst)
         workflow.add_node("Conservative Analyst", conservative_analyst)
         workflow.add_node("Risk Judge", risk_manager_node)
+        workflow.add_node("Radon Validation", create_radon_validation_node())
 
         # Define edges
         # Start with the first analyst
@@ -193,7 +195,8 @@ class GraphSetup:
             },
         )
 
-        workflow.add_edge("Risk Judge", END)
+        workflow.add_edge("Risk Judge", "Radon Validation")
+        workflow.add_edge("Radon Validation", END)
 
         # Compile and return
         return workflow.compile()

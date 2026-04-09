@@ -62,6 +62,7 @@ class MessageBuffer:
             "Conservative Analyst",
         ],
         "Portfolio Management": ["Portfolio Manager"],
+        "Radon Validation": ["Radon Validator"],
     }
 
     # Analyst name mapping
@@ -86,6 +87,7 @@ class MessageBuffer:
         "investment_plan": (None, "Research Manager"),
         "trader_investment_plan": (None, "Trader"),
         "final_trade_decision": (None, "Portfolio Manager"),
+        "radon_validation_report": (None, "Radon Validator"),
     }
 
     def __init__(self, max_length=100):
@@ -198,6 +200,7 @@ class MessageBuffer:
                 "investment_plan": "Research Team Decision",
                 "trader_investment_plan": "Trading Team Plan",
                 "final_trade_decision": "Portfolio Management Decision",
+                "radon_validation_report": "Radon Validation",
             }
             self.current_report = (
                 f"### {section_titles[latest_section]}\n{latest_content}"
@@ -255,6 +258,13 @@ class MessageBuffer:
             report_parts.extend([
                 "## Portfolio Management Decision",
                 f"{self.report_sections['final_trade_decision']}",
+            ])
+
+        # Radon Validation
+        if self.report_sections.get("radon_validation_report"):
+            report_parts.extend([
+                "## Radon Validation",
+                f"{self.report_sections['radon_validation_report']}",
             ])
 
         self.final_report = "\n\n".join(report_parts) if report_parts else None
@@ -334,6 +344,7 @@ def update_display(layout, stats_handler=None, start_time=None):
             "Conservative Analyst",
         ],
         "Portfolio Management": ["Portfolio Manager"],
+        "Radon Validation": ["Radon Validator"],
     }
 
     # Filter teams to only include agents that are in agent_status
@@ -817,6 +828,21 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
                 f"{risk['judge_decision']}"
             )
 
+    # 6. Radon Validation
+    if final_state.get("radon_validation_result"):
+        radon_dir = save_path / "6_radon"
+        radon_dir.mkdir(exist_ok=True)
+        status = final_state["radon_validation_result"]
+        details = final_state.get("radon_validation_details", "")
+        details_str = str(details)
+        (radon_dir / "validation.md").write_text(
+            f"Status: {status}\n\n{details_str}", encoding="utf-8"
+        )
+        sections.append(
+            f"## VI. Radon Validation\n\n### Radon Validator\n"
+            f"**Status:** {status}\n\n{details_str}"
+        )
+
     # Write consolidated report
     header = (
         f"# Trading Analysis Report: {ticker}\n\n"
@@ -933,6 +959,61 @@ def display_complete_report(final_state):
                     padding=(1, 2),
                 )
             )
+
+    # VI. Radon Validation
+    if final_state.get("radon_validation_result"):
+        status = final_state["radon_validation_result"]
+        status_colors = {
+            "PASS": "green",
+            "FAIL": "red",
+            "SKIP": "yellow",
+            "ERROR": "red",
+            "UNAVAILABLE": "dim",
+        }
+        status_color = status_colors.get(status, "white")
+        console.print(Panel("[bold]VI. Radon Validation[/bold]", border_style="cyan"))
+
+        validation_lines = [f"**Status:** [{status_color}]{status}[/{status_color}]"]
+
+        details = final_state.get("radon_validation_details")
+        if isinstance(details, str) and details:
+            validation_lines.append(details)
+        elif isinstance(details, dict):
+            if details.get("summary"):
+                validation_lines.append(f"**Summary:** {details['summary']}")
+            milestones = details.get("milestones", [])
+            if milestones:
+                validation_lines.append("**Milestones:**")
+                for milestone in milestones:
+                    passed = milestone.get("passed", False)
+                    icon = "[green]✓[/green]" if passed else "[red]✗[/red]"
+                    name = milestone.get("milestone", "Unknown")
+                    reason = milestone.get("reason", "")
+                    validation_lines.append(f"  {icon} {name}: {reason}")
+            gates = details.get("gates")
+            if gates:
+                if isinstance(gates, list):
+                    for gate in gates:
+                        passed = gate.get("passed", False)
+                        icon = "[green]✓[/green]" if passed else "[red]✗[/red]"
+                        name = gate.get("name", "Unknown")
+                        validation_lines.append(f"  Gate: {icon} {name}")
+                elif isinstance(gates, dict):
+                    for name, passed in gates.items():
+                        icon = "[green]✓[/green]" if passed else "[red]✗[/red]"
+                        validation_lines.append(f"  Gate: {icon} {name}")
+            decision = details.get("decision")
+            if decision:
+                validation_lines.append(f"**Decision:** {decision}")
+
+        console.print(
+            Panel(
+                Markdown("\n\n".join(validation_lines)),
+                title="Radon Validator",
+                border_style="blue",
+                padding=(1, 2),
+            )
+        )
 
 
 def update_research_team_statuses(debate_state):
