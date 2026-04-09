@@ -1,19 +1,23 @@
-"""RadonEvaluator — 7-milestone evaluation pipeline.
+"""RadonEvaluator — 11-milestone evaluation pipeline.
 
 Adapted from radon/scripts/evaluate.py. Orchestrates parallel data fetch
 milestones (M1-M3B) and sequential decision milestones (M4-M7).
 
 Milestones:
-  M1  — Data availability check
-  M2  — Strategy scan
-  M3A — Convexity check
-  M3B — Edge determination
-  M4  — Risk management
-  M5  — Kelly criterion sizing
-  M6  — No naked shorts
+  M1  — Ticker validation (UW stock info + option contracts)
+  M1B — Seasonality context (UW monthly seasonality)
+  M1C — Analyst ratings context (UW analyst ratings)
+  M1D — News & catalysts context (UW news headlines)
+  M2  — Dark pool flow (DarkPoolFlowStrategy scan)
+  M3  — Options chain + institutional flow (UW option contracts + flow alerts)
+  M3B — Open interest changes (UW OI change data)
+  M4  — Edge determination (uses M2, M3, M3B, price, news)
+  M5  — Structure proposal (risk/reward >= 2:1)
+  M6  — Kelly sizing (fractional Kelly criterion)
   M7  — Final decision synthesis
 
-Actual data wiring happens in T17; milestone functions return sensible stubs.
+Milestones M1 through M3B run in parallel (ThreadPoolExecutor).
+Milestones M4 through M7 run sequentially after the parallel group.
 """
 
 from __future__ import annotations
@@ -37,13 +41,13 @@ logger = logging.getLogger(__name__)
 _MIN_SUSTAINED_DAYS = 3
 _MIN_FLOW_STRENGTH = 50.0
 _ALT_RECENT_STRENGTH = 70.0
-_MIN_WIN_RATE = 0.0
-_MIN_RISK_REWARD = 0.0
-_MIN_KELLY_FRACTION = 0.0
+_MIN_RISK_REWARD = 2.0
+_DEFAULT_KELLY_FRACTION = 0.25
+_DEFAULT_WIN_PROB = 0.55
 
 
 class RadonEvaluator:
-    """Evaluate a ticker through 7 milestones.
+    """Evaluate a ticker through 11 milestones.
 
     Parameters
     ----------
@@ -55,6 +59,8 @@ class RadonEvaluator:
         - ``min_flow_strength`` (float): minimum aggregate flow strength
         - ``min_sustained_days`` (int): consecutive flow-direction days
         - ``alt_recent_strength`` (float): alternative single-day threshold
+        - ``min_risk_reward`` (float): minimum risk/reward ratio
+        - ``kelly_fraction`` (float): Kelly fraction for position sizing
     """
 
     def __init__(self, config: dict | None = None) -> None:
@@ -69,6 +75,8 @@ class RadonEvaluator:
         self.alt_recent_strength: float = cfg.get(
             "alt_recent_strength", _ALT_RECENT_STRENGTH
         )
+        self.min_risk_reward: float = cfg.get("min_risk_reward", _MIN_RISK_REWARD)
+        self.kelly_fraction: float = cfg.get("kelly_fraction", _DEFAULT_KELLY_FRACTION)
 
     # ------------------------------------------------------------------
     # Public API
@@ -76,15 +84,19 @@ class RadonEvaluator:
 
     @property
     def milestone_names(self) -> list[str]:
-        """Return the 7 milestone names in pipeline order."""
+        """Return the milestone names in pipeline order."""
         return [
-            "Data Fetch",
-            "Strategy Scan",
-            "Convexity",
-            "Edge",
-            "Risk Management",
+            "Ticker Validation",
+            "Seasonality",
+            "Analyst Ratings",
+            "News & Catalysts",
+            "Dark Pool Flow",
+            "Options Flow",
+            "OI Changes",
+            "Edge Determination",
+            "Structure Proposal",
             "Kelly Sizing",
-            "No Naked Shorts",
+            "Final Decision",
         ]
 
     def evaluate(
@@ -93,7 +105,7 @@ class RadonEvaluator:
         asset_type: str,
         trade_decision: str,
     ) -> EvaluationResult:
-        """Run the full 7-milestone evaluation pipeline.
+        """Run the full 11-milestone evaluation pipeline.
 
         Parameters
         ----------
@@ -132,7 +144,7 @@ class RadonEvaluator:
         milestones: dict[str, MilestoneResult] = {}
         parallel_results = self._run_parallel_milestones(ticker)
 
-        # M1: Data Fetch — early exit on failure
+        # M1: Ticker Validation — early exit on failure
         m1 = parallel_results.get("M1")
         if m1 is not None:
             milestones["M1"] = m1
@@ -140,7 +152,7 @@ class RadonEvaluator:
                 result.status = ValidationStatus.FAIL
                 result.decision = TradeDecision.NO_TRADE
                 result.milestones = list(milestones.values())
-                result.summary = f"M1 Data Fetch failed: {m1.reason}"
+                result.summary = f"M1 Ticker Validation failed: {m1.reason}"
                 logger.warning("M1 failed for %s: %s", ticker, m1.reason)
                 return result
         else:
@@ -150,43 +162,47 @@ class RadonEvaluator:
             result.status = ValidationStatus.FAIL
             result.decision = TradeDecision.NO_TRADE
             result.milestones = list(milestones.values())
-            result.summary = "M1 Data Fetch result missing"
+            result.summary = "M1 Ticker Validation result missing"
             return result
 
-        # M2: Strategy Scan
-        m2 = parallel_results.get("M2")
-        if m2 is not None:
-            milestones["M2"] = m2
+        # Context milestones (M1B, M1C, M1D) — informational, always pass
+        for key in ("M1B", "M1C", "M1D"):
+            ms = parallel_results.get(key)
+            if ms is not None:
+                milestones[key] = ms
 
-        # M3A: Convexity
-        m3a = parallel_results.get("M3A")
-        if m3a is not None:
-            milestones["M3A"] = m3a
-
-        # M3B: Edge determination
-        m3b = parallel_results.get("M3B")
-        if m3b is not None:
-            milestones["M3B"] = m3b
+        # Data milestones (M2, M3, M3B) — data fetches, always pass
+        for key in ("M2", "M3", "M3B"):
+            ms = parallel_results.get(key)
+            if ms is not None:
+                milestones[key] = ms
 
         # ── Phase 2: Sequential milestones M4-M7 ───────────────────────
 
-        # M4: Risk Management — early exit on failure
-        m4 = self._milestone_m4_risk_management(ticker, milestones)
+        # M4: Edge Determination — early exit on failure
+        m4 = self._milestone_m4_edge_determination(ticker, milestones)
         milestones["M4"] = m4
         if not m4.passed:
             result.status = ValidationStatus.FAIL
             result.decision = TradeDecision.NO_TRADE
             result.milestones = list(milestones.values())
-            result.summary = f"M4 Risk Management failed: {m4.reason}"
+            result.summary = f"M4 Edge Determination failed: {m4.reason}"
             logger.warning("M4 failed for %s: %s", ticker, m4.reason)
             return result
 
-        # M5: Kelly Sizing
-        m5 = self._milestone_m5_kelly_sizing(ticker, milestones)
+        # M5: Structure Proposal — early exit on failure
+        m5 = self._milestone_m5_structure_proposal(ticker, milestones)
         milestones["M5"] = m5
+        if not m5.passed:
+            result.status = ValidationStatus.FAIL
+            result.decision = TradeDecision.NO_TRADE
+            result.milestones = list(milestones.values())
+            result.summary = f"M5 Structure Proposal failed: {m5.reason}"
+            logger.warning("M5 failed for %s: %s", ticker, m5.reason)
+            return result
 
-        # M6: No Naked Shorts
-        m6 = self._milestone_m6_no_naked_shorts(ticker, trade_decision, milestones)
+        # M6: Kelly Sizing
+        m6 = self._milestone_m6_kelly_sizing(ticker, milestones)
         milestones["M6"] = m6
 
         # M7: Final Decision
@@ -265,6 +281,11 @@ class RadonEvaluator:
             if expected_dp and expected_dp != agg_direction:
                 options_conflict = True
 
+        # News / catalyst analysis
+        news_summary = (news or {}).get("summary", {})
+        news_sentiment = news_summary.get("sentiment_bias", "NEUTRAL")
+        news_material_count = news_summary.get("material_count", 0)
+
         result: dict[str, Any] = {
             "passed": False,
             "reason": "",
@@ -275,6 +296,8 @@ class RadonEvaluator:
             "agg_buy_ratio": agg_buy_ratio,
             "options_conflict": options_conflict,
             "signal_priced_in": signal_priced_in,
+            "news_sentiment": news_sentiment,
+            "news_material_count": news_material_count,
         }
 
         # Gate checks
@@ -329,25 +352,34 @@ class RadonEvaluator:
     def _run_parallel_milestones(self, ticker: str) -> dict[str, MilestoneResult]:
         """Execute M1-M3B concurrently via ThreadPoolExecutor.
 
-        Returns dict keyed by milestone ID (``"M1"``, ``"M2"``, etc.).
+        Returns dict keyed by milestone ID (``"M1"``, ``"M1B"``, etc.).
         """
         results: dict[str, MilestoneResult] = {}
 
         def _m1() -> tuple[str, MilestoneResult]:
-            return ("M1", self._milestone_m1_data_fetch(ticker))
+            return ("M1", self._milestone_m1_ticker_validation(ticker))
+
+        def _m1b() -> tuple[str, MilestoneResult]:
+            return ("M1B", self._milestone_m1b_seasonality(ticker))
+
+        def _m1c() -> tuple[str, MilestoneResult]:
+            return ("M1C", self._milestone_m1c_analyst_ratings(ticker))
+
+        def _m1d() -> tuple[str, MilestoneResult]:
+            return ("M1D", self._milestone_m1d_news_catalysts(ticker))
 
         def _m2() -> tuple[str, MilestoneResult]:
-            return ("M2", self._milestone_m2_strategy_scan(ticker))
+            return ("M2", self._milestone_m2_dark_pool_flow(ticker))
 
-        def _m3a() -> tuple[str, MilestoneResult]:
-            return ("M3A", self._milestone_m3a_convexity(ticker))
+        def _m3() -> tuple[str, MilestoneResult]:
+            return ("M3", self._milestone_m3_options_flow(ticker))
 
         def _m3b() -> tuple[str, MilestoneResult]:
-            return ("M3B", self._milestone_m3b_edge(ticker))
+            return ("M3B", self._milestone_m3b_oi_changes(ticker))
 
-        tasks = [_m1, _m2, _m3a, _m3b]
+        tasks = [_m1, _m1b, _m1c, _m1d, _m2, _m3, _m3b]
 
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=7) as pool:
             futures = {pool.submit(fn): fn.__name__ for fn in tasks}
             for future in as_completed(futures):
                 fn_name = futures[future]
@@ -360,130 +392,468 @@ class RadonEvaluator:
         return results
 
     # ------------------------------------------------------------------
-    # Individual milestone implementations (stubs)
+    # Individual milestone implementations
     # ------------------------------------------------------------------
 
-    def _milestone_m1_data_fetch(self, ticker: str) -> MilestoneResult:
-        """M1 — Data availability check.
+    def _milestone_m1_ticker_validation(self, ticker: str) -> MilestoneResult:
+        """M1 — Ticker validation.
 
-        Stub: returns passed=True. Actual data wiring in T17.
+        Verifies the ticker exists and has options available using the UW
+        client. Falls back to IB client when UW is unavailable.
         """
-        logger.debug("M1 Data Fetch (stub) for %s", ticker)
-        return MilestoneResult(
-            milestone="M1",
-            passed=True,
-            reason="Data available (stub)",
-            data={"ticker": ticker.upper(), "verified": True},
+        data: dict[str, Any] = {
+            "ticker": ticker.upper(),
+            "verified": False,
+            "options_available": False,
+        }
+
+        # Try UW client first
+        try:
+            from tradingagents.radon.clients.uw_client import UWClient
+
+            with UWClient() as uw:
+                if uw.is_available():
+                    stock_info = uw.get_stock_info(ticker)
+                    if stock_info and stock_info.get("data"):
+                        data["verified"] = True
+                        sdata = stock_info["data"]
+                        data["company_name"] = sdata.get("name") or sdata.get(
+                            "full_name"
+                        )
+                        data["sector"] = sdata.get("sector")
+                        data["market_cap"] = sdata.get("market_cap")
+
+                    options = uw.get_option_contracts(ticker)
+                    if options and options.get("data"):
+                        data["options_available"] = True
+        except Exception:
+            logger.debug(
+                "UW client unavailable for M1 ticker validation", exc_info=True
+            )
+
+        # If UW didn't verify, try IB
+        if not data["verified"] and not self.skip_ib:
+            try:
+                from tradingagents.radon.clients.ib_client import IBClient
+
+                ib = IBClient()
+                if ib.is_available():
+                    data["verified"] = True
+                    data["options_available"] = True
+            except Exception:
+                logger.debug("IB client unavailable for M1", exc_info=True)
+
+        # If no clients verified the ticker, accept it anyway — we cannot
+        # determine validity without data sources, so we don't block.
+        if not data["verified"]:
+            data["verified"] = True
+            data["note"] = "Ticker verification skipped — no data clients available"
+
+        passed = data["verified"]
+        reason = (
+            "Ticker verified"
+            if data.get("company_name")
+            else "Ticker accepted (limited verification)"
         )
 
-    def _milestone_m2_strategy_scan(self, ticker: str) -> MilestoneResult:
-        """M2 — Strategy scan.
+        return MilestoneResult(
+            milestone="M1",
+            passed=passed,
+            reason=reason,
+            data=data,
+        )
 
-        Stub: returns passed=True with empty strategy data.
+    def _milestone_m1b_seasonality(self, ticker: str) -> MilestoneResult:
+        """M1B — Seasonality context.
+
+        Fetches monthly seasonality data from UW. Informational only — does
+        not gate the evaluation.
         """
-        logger.debug("M2 Strategy Scan (stub) for %s", ticker)
+        data: dict[str, Any] = {"ticker": ticker.upper()}
+
+        try:
+            from tradingagents.radon.clients.uw_client import UWClient
+
+            with UWClient() as uw:
+                if uw.is_available():
+                    seasonality = uw.get_monthly_seasonality(ticker)
+                    if seasonality:
+                        data["seasonality"] = seasonality
+                        data["source"] = "uw"
+        except Exception:
+            logger.debug("UW seasonality fetch failed for %s", ticker, exc_info=True)
+
+        return MilestoneResult(
+            milestone="M1B",
+            passed=True,
+            reason="Seasonality context retrieved"
+            if data.get("seasonality")
+            else "Seasonality data unavailable",
+            data=data,
+        )
+
+    def _milestone_m1c_analyst_ratings(self, ticker: str) -> MilestoneResult:
+        """M1C — Analyst ratings context.
+
+        Fetches analyst ratings from UW. Informational only — does not gate.
+        """
+        data: dict[str, Any] = {"ticker": ticker.upper()}
+
+        try:
+            from tradingagents.radon.clients.uw_client import UWClient
+
+            with UWClient() as uw:
+                if uw.is_available():
+                    ratings = uw.get_analyst_ratings(ticker=ticker, limit=10)
+                    if ratings:
+                        data["ratings"] = ratings
+                        data["source"] = "uw"
+        except Exception:
+            logger.debug(
+                "UW analyst ratings fetch failed for %s", ticker, exc_info=True
+            )
+
+        return MilestoneResult(
+            milestone="M1C",
+            passed=True,
+            reason="Analyst ratings retrieved"
+            if data.get("ratings")
+            else "Analyst ratings unavailable",
+            data=data,
+        )
+
+    def _milestone_m1d_news_catalysts(self, ticker: str) -> MilestoneResult:
+        """M1D — News & catalysts context.
+
+        Fetches recent news headlines from UW. Informational only — does not
+        gate, but data is used by M4 edge determination.
+        """
+        data: dict[str, Any] = {"ticker": ticker.upper()}
+
+        try:
+            from tradingagents.radon.clients.uw_client import UWClient
+
+            with UWClient() as uw:
+                if uw.is_available():
+                    news = uw.get_news_headlines(ticker=ticker, limit=20)
+                    if news:
+                        data["news"] = news
+                        data["source"] = "uw"
+        except Exception:
+            logger.debug("UW news fetch failed for %s", ticker, exc_info=True)
+
+        return MilestoneResult(
+            milestone="M1D",
+            passed=True,
+            reason="News data retrieved"
+            if data.get("news")
+            else "News data unavailable",
+            data=data,
+        )
+
+    def _milestone_m2_dark_pool_flow(self, ticker: str) -> MilestoneResult:
+        """M2 — Dark pool flow.
+
+        Uses the DarkPoolFlowStrategy to scan for dark pool signals.
+        Data is consumed by M4 (edge determination).
+        """
+        data: dict[str, Any] = {"ticker": ticker.upper()}
+
+        try:
+            from tradingagents.radon.strategies.dark_pool_flow import (
+                DarkPoolFlowStrategy,
+            )
+
+            strategy = DarkPoolFlowStrategy()
+            signal = strategy.scan(ticker, skip_positions=True, skip_options_flow=False)
+            data["signal"] = {
+                "signal_type": signal.signal_type,
+                "confidence": signal.confidence,
+                "data": signal.data,
+                "source": signal.source,
+            }
+        except Exception:
+            logger.debug("Dark pool flow scan failed for %s", ticker, exc_info=True)
+
         return MilestoneResult(
             milestone="M2",
             passed=True,
-            reason="No conflicting signals (stub)",
-            data={"ticker": ticker.upper(), "strategies": []},
+            reason="Dark pool flow data retrieved"
+            if data.get("signal")
+            else "Dark pool flow data unavailable",
+            data=data,
         )
 
-    def _milestone_m3a_convexity(self, ticker: str) -> MilestoneResult:
-        """M3A — Convexity check.
+    def _milestone_m3_options_flow(self, ticker: str) -> MilestoneResult:
+        """M3 — Options chain + institutional flow.
 
-        Stub: returns passed=True.
+        Fetches option contracts and flow alerts from UW, and option chain
+        from IB when available. Data is consumed by M4.
         """
-        logger.debug("M3A Convexity (stub) for %s", ticker)
+        data: dict[str, Any] = {"ticker": ticker.upper()}
+
+        try:
+            from tradingagents.radon.clients.uw_client import UWClient
+
+            with UWClient() as uw:
+                if uw.is_available():
+                    contracts = uw.get_option_contracts(ticker)
+                    if contracts:
+                        data["option_contracts"] = contracts
+
+                    flow_alerts = uw.get_flow_alerts_by_ticker(ticker, limit=20)
+                    if flow_alerts:
+                        data["flow_alerts"] = flow_alerts
+        except Exception:
+            logger.debug("UW options flow fetch failed for %s", ticker, exc_info=True)
+
+        # Supplement with IB option chain when available
+        if not self.skip_ib:
+            try:
+                from tradingagents.radon.clients.ib_client import IBClient
+
+                ib = IBClient()
+                if ib.is_available():
+                    chain = ib.get_option_chain(ticker)
+                    if chain:
+                        data["ib_option_chain"] = True
+            except Exception:
+                logger.debug(
+                    "IB option chain fetch failed for %s", ticker, exc_info=True
+                )
+
         return MilestoneResult(
-            milestone="M3A",
+            milestone="M3",
             passed=True,
-            reason="Convex structure (stub)",
-            data={"ticker": ticker.upper()},
+            reason="Options flow data retrieved"
+            if data.get("option_contracts") or data.get("flow_alerts")
+            else "Options flow data unavailable",
+            data=data,
         )
 
-    def _milestone_m3b_edge(self, ticker: str) -> MilestoneResult:
-        """M3B — Edge determination.
+    def _milestone_m3b_oi_changes(self, ticker: str) -> MilestoneResult:
+        """M3B — Open interest changes.
 
-        Stub: returns passed=True with default edge data.
-        Actual flow/options/price analysis wired in T17.
+        Fetches OI change data from UW. Data is consumed by M4.
         """
-        logger.debug("M3B Edge (stub) for %s", ticker)
+        data: dict[str, Any] = {"ticker": ticker.upper()}
+
+        try:
+            from tradingagents.radon.clients.uw_client import UWClient
+
+            with UWClient() as uw:
+                if uw.is_available():
+                    oi_data = uw.get_stock_oi_change(ticker)
+                    if oi_data:
+                        data["oi_change"] = oi_data
+        except Exception:
+            logger.debug("UW OI change fetch failed for %s", ticker, exc_info=True)
+
         return MilestoneResult(
             milestone="M3B",
             passed=True,
-            reason="Edge present (stub)",
-            data={
-                "ticker": ticker.upper(),
-                "edge_details": {
-                    "sustained_days": 3,
-                    "flow_strength": 60.0,
-                    "agg_direction": "ACCUMULATION",
-                },
-            },
+            reason="OI change data retrieved"
+            if data.get("oi_change")
+            else "OI change data unavailable",
+            data=data,
         )
 
-    def _milestone_m4_risk_management(
+    def _milestone_m4_edge_determination(
         self, ticker: str, milestones: dict[str, MilestoneResult]
     ) -> MilestoneResult:
-        """M4 — Risk management check.
+        """M4 — Edge determination.
 
-        Stub: returns passed=True. In production this checks position sizing,
-        portfolio risk, and drawdown limits.
+        Uses ``determine_edge()`` with data from M2 (flow), M3 (options),
+        M3B (OI changes), price history, and M1D (news).
         """
-        logger.debug("M4 Risk Management (stub) for %s", ticker)
+        # Extract flow data from M2
+        m2 = milestones.get("M2")
+        flow: dict[str, Any] = {}
+        if m2 and m2.data.get("signal"):
+            signal_data = m2.data["signal"].get("data", {})
+            # Reconstruct flow dict expected by determine_edge()
+            flow = {"dark_pool": {"aggregate": {}, "daily": []}}
+            if isinstance(signal_data, dict):
+                agg = signal_data.copy()
+                flow["dark_pool"]["aggregate"] = {
+                    "flow_direction": agg.get("direction", "NEUTRAL"),
+                    "flow_strength": agg.get("strength", 0),
+                    "dp_buy_ratio": agg.get("buy_ratio", 0.5),
+                    "num_prints": agg.get("num_prints", 0),
+                }
+
+        # Extract options data from M3
+        m3 = milestones.get("M3")
+        options: dict | None = None
+        if m3 and m3.data.get("flow_alerts"):
+            options = m3.data.get("flow_alerts")
+
+        # Extract OI data from M3B
+        m3b = milestones.get("M3B")
+        oi_changes: list[dict] = []
+        if m3b and m3b.data.get("oi_change"):
+            oi_raw = m3b.data["oi_change"]
+            if isinstance(oi_raw, dict):
+                items = oi_raw.get("data", [])
+                if isinstance(items, list):
+                    oi_changes = items
+
+        # Fetch price history for signal_priced_in check
+        price_history = self._fetch_price_history(ticker)
+
+        # Extract news data from M1D
+        m1d = milestones.get("M1D")
+        news: dict | None = None
+        if m1d and m1d.data.get("news"):
+            news = m1d.data["news"]
+
+        edge = self.determine_edge(
+            flow=flow,
+            options=options,
+            oi_changes=oi_changes,
+            price_history=price_history,
+            news=news,
+        )
+
         return MilestoneResult(
             milestone="M4",
-            passed=True,
-            reason="Risk within limits (stub)",
-            data={
-                "ticker": ticker.upper(),
-                "position_limit_ok": True,
-                "portfolio_risk_ok": True,
-            },
+            passed=edge["passed"],
+            reason=edge.get("reason", "Edge determination complete"),
+            data={"ticker": ticker.upper(), "edge_details": edge},
         )
 
-    def _milestone_m5_kelly_sizing(
+    def _milestone_m5_structure_proposal(
         self, ticker: str, milestones: dict[str, MilestoneResult]
     ) -> MilestoneResult:
-        """M5 — Kelly criterion sizing.
+        """M5 — Structure proposal.
 
-        Stub: returns passed=True with a default fractional Kelly.
-        Actual Kelly calculation wired via kelly.py in T17.
+        Checks that a risk/reward ratio >= 2:1 is achievable based on the
+        edge data from M4. In production, the operator designs the actual
+        structure interactively.
         """
-        logger.debug("M5 Kelly Sizing (stub) for %s", ticker)
-        return MilestoneResult(
-            milestone="M5",
-            passed=True,
-            reason="Kelly size within bounds (stub)",
-            data={
-                "ticker": ticker.upper(),
-                "kelly_fraction": 0.25,
-                "suggested_size": self.bankroll * 0.25,
-            },
+        m4 = milestones.get("M4")
+        edge_details = (m4.data.get("edge_details", {})) if m4 else {}
+
+        agg_direction = edge_details.get("agg_direction", "NEUTRAL")
+        flow_strength = edge_details.get("flow_strength", 0.0)
+        options_conflict = edge_details.get("options_conflict", False)
+
+        data: dict[str, Any] = {
+            "ticker": ticker.upper(),
+            "direction": agg_direction,
+            "flow_strength": flow_strength,
+        }
+
+        # Estimate risk/reward based on edge quality
+        # Stronger flow → higher confidence → better R:R achievable
+        reward_risk = 1.0
+        if flow_strength >= 80:
+            reward_risk = 3.0
+        elif flow_strength >= 60:
+            reward_risk = 2.5
+        elif flow_strength >= 50:
+            reward_risk = 2.0
+
+        # Reduce if options conflict
+        if options_conflict:
+            reward_risk -= 0.5
+
+        data["estimated_risk_reward"] = reward_risk
+        data["min_risk_reward"] = self.min_risk_reward
+
+        passed = reward_risk >= self.min_risk_reward
+        reason = (
+            f"Estimated R:R {reward_risk:.1f}:1 meets {self.min_risk_reward:.1f}:1 threshold"
+            if passed
+            else f"Estimated R:R {reward_risk:.1f}:1 below {self.min_risk_reward:.1f}:1 threshold"
         )
 
-    def _milestone_m6_no_naked_shorts(
-        self,
-        ticker: str,
-        trade_decision: str,
-        milestones: dict[str, MilestoneResult],
-    ) -> MilestoneResult:
-        """M6 — No naked shorts check.
+        if agg_direction == "NEUTRAL":
+            passed = False
+            reason = "No clear direction for structure"
 
-        Ensures no unlimited-risk positions are taken.
-        Stub: returns passed=True.
+        return MilestoneResult(
+            milestone="M5",
+            passed=passed,
+            reason=reason,
+            data=data,
+        )
+
+    def _milestone_m6_kelly_sizing(
+        self, ticker: str, milestones: dict[str, MilestoneResult]
+    ) -> MilestoneResult:
+        """M6 — Kelly criterion sizing.
+
+        Uses ``fractional_kelly()`` from ``kelly.py`` to compute position
+        size based on the edge data from M4 and structure from M5.
         """
-        logger.debug("M6 No Naked Shorts (stub) for %s", ticker)
+        m4 = milestones.get("M4")
+        edge_details = (m4.data.get("edge_details", {})) if m4 else {}
+
+        flow_strength = edge_details.get("flow_strength", 0.0)
+        agg_direction = edge_details.get("agg_direction", "NEUTRAL")
+
+        # Derive Kelly inputs from edge quality
+        # Higher flow strength → higher win probability
+        win_prob = _DEFAULT_WIN_PROB
+        if flow_strength >= 80:
+            win_prob = 0.65
+        elif flow_strength >= 60:
+            win_prob = 0.60
+        elif flow_strength >= 50:
+            win_prob = 0.55
+
+        # Estimate win/loss amounts based on R:R from M5
+        m5 = milestones.get("M5")
+        rr_ratio = (m5.data.get("estimated_risk_reward", 2.0)) if m5 else 2.0
+
+        # Use $1 as the loss unit; Kelly returns fraction of bankroll
+        loss_amount = 1.0
+        win_amount = loss_amount * rr_ratio
+
+        kelly_fraction = 0.0
+        recommendation = "DO NOT BET"
+
+        try:
+            from tradingagents.radon.utils.kelly import fractional_kelly
+
+            kelly_fraction = fractional_kelly(
+                win_prob=win_prob,
+                win_amount=win_amount,
+                loss_amount=loss_amount,
+                fraction=self.kelly_fraction,
+            )
+            if kelly_fraction > 0:
+                recommendation = "TRADE"
+        except Exception:
+            logger.debug("Kelly calculation failed for %s", ticker, exc_info=True)
+
+        suggested_size = self.bankroll * kelly_fraction
+
+        data: dict[str, Any] = {
+            "ticker": ticker.upper(),
+            "direction": agg_direction,
+            "win_prob": win_prob,
+            "risk_reward": rr_ratio,
+            "kelly_fraction": round(kelly_fraction, 4),
+            "suggested_size": round(suggested_size, 2),
+            "bankroll": self.bankroll,
+            "recommendation": recommendation,
+        }
+
+        passed = kelly_fraction > 0 and agg_direction != "NEUTRAL"
+        reason = (
+            f"Kelly size {kelly_fraction:.2%} of ${self.bankroll:,.0f} "
+            f"= ${suggested_size:,.0f}"
+            if passed
+            else "No Kelly edge — recommendation: do not bet"
+        )
+
         return MilestoneResult(
             milestone="M6",
-            passed=True,
-            reason="No naked short exposure (stub)",
-            data={
-                "ticker": ticker.upper(),
-                "trade_decision": trade_decision,
-                "naked_short_detected": False,
-            },
+            passed=passed,
+            reason=reason,
+            data=data,
         )
 
     def _milestone_m7_final_decision(
@@ -495,23 +865,24 @@ class RadonEvaluator:
         """M7 — Final decision synthesis.
 
         Aggregates all previous milestone results into a final go/no-go.
-        Stub: returns passed=True.
         """
-        logger.debug("M7 Final Decision (stub) for %s", ticker)
         all_passed = all(ms.passed for ms in milestones.values())
+        passed_count = sum(1 for ms in milestones.values() if ms.passed)
+        total_count = len(milestones)
+
         return MilestoneResult(
             milestone="M7",
             passed=all_passed,
             reason=(
-                "All milestones passed (stub)"
+                f"All {total_count} milestones passed"
                 if all_passed
-                else "One or more milestones failed"
+                else f"{passed_count}/{total_count} milestones passed — trade rejected"
             ),
             data={
                 "ticker": ticker.upper(),
                 "trade_decision": trade_decision,
-                "milestones_passed": sum(1 for ms in milestones.values() if ms.passed),
-                "milestones_total": len(milestones),
+                "milestones_passed": passed_count,
+                "milestones_total": total_count,
             },
         )
 
@@ -536,12 +907,42 @@ class RadonEvaluator:
                 break
         return streak
 
+    def _fetch_price_history(self, ticker: str, days: int = 10) -> list[dict]:
+        """Fetch recent price bars for the signal_priced_in check.
+
+        Uses UW OHLC data when available. Returns empty list on failure
+        (non-fatal — signal_priced_in defaults to False).
+        """
+        try:
+            from tradingagents.radon.clients.uw_client import UWClient
+
+            with UWClient() as uw:
+                if uw.is_available():
+                    ohlc = uw.get_stock_ohlc(ticker, candle_size="1d")
+                    if ohlc and ohlc.get("data"):
+                        bars = ohlc["data"]
+                        if isinstance(bars, list):
+                            return [
+                                {
+                                    "date": bar.get("date", ""),
+                                    "open": float(bar.get("open", 0)),
+                                    "close": float(bar.get("close", 0)),
+                                    "volume": float(bar.get("volume", 0)),
+                                }
+                                for bar in bars
+                                if bar.get("close")
+                            ]
+        except Exception:
+            logger.debug("Price history fetch failed for %s", ticker, exc_info=True)
+
+        return []
+
     def _run_in_ib_thread(self, coro: Any) -> Any:
         """Run an async coroutine in a dedicated thread with its own event loop.
 
         ib_insync requires its own asyncio event loop. This method creates
         a new event loop in a background thread, runs the coroutine, and
-        returns the result. Actual IB calls wired in T8/T17.
+        returns the result.
         """
         result_container: dict[str, Any] = {}
         error_container: dict[str, str] = {}

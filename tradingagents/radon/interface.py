@@ -65,7 +65,7 @@ def validate_trade(state: dict) -> dict:
         result: EvaluationResult = evaluator.evaluate(
             ticker=ticker,
             asset_type=asset_type,
-            final_decision=final_decision,
+            trade_decision=final_decision,
         )
         return {
             **state,

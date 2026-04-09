@@ -1,7 +1,7 @@
 from typing import Annotated, Literal
 
 from langgraph.graph import MessagesState
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 from tradingagents.agents import *
 
@@ -74,3 +74,7 @@ class AgentState(MessagesState):
         RiskDebateState, "Current state of the debate on evaluating risk"
     ]
     final_trade_decision: Annotated[str, "Final decision made by the Risk Analysts"]
+
+    # radon validation step
+    radon_validation_result: NotRequired[str]
+    radon_validation_details: NotRequired[dict]
