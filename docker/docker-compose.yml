@@ -38,6 +38,32 @@ services:
     #   - /app/tradingagents/**/__pycache__
     restart: unless-stopped
 
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: tradingagents-api
+    environment:
+      - APP_MODE=api
+      - REDIS_URL=redis://redis:6379/0
+      - TRADINGAGENTS_RESULTS_DIR=/app/results
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - tradingagents-network
+    volumes:
+      - ../results:/app/results
+    restart: unless-stopped
+
   redis:
     image: redis:7.2-alpine
     container_name: tradingagents-redis
