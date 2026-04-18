@@ -18,11 +18,14 @@ RUN pip install uv
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install Python dependencies using uv
-RUN uv sync --frozen
+# Install Python dependencies using uv (skip project itself since src/ not yet available)
+RUN uv sync --frozen --no-install-project
 
 # Copy application code
 COPY . /app
+
+# Install project now that source code is available
+RUN uv sync --frozen
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \

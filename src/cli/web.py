@@ -71,7 +71,8 @@ Let's configure your analysis session.
     if date_response.get("output").strip():
         try:
             analysis_date = (
-                datetime.strptime(date_response.get("output"), "%Y-%m-%d")
+                datetime
+                .strptime(date_response.get("output"), "%Y-%m-%d")
                 .replace(tzinfo=datetime.timezone.utc)
                 .date()
             )

@@ -171,7 +171,7 @@ asdf reshim python
 uv sync
 
 # Run with virtualenv
-uv run python main.py
+uv run python -m cli.main
 
 # Add/remove dependencies
 uv add <package>
@@ -319,7 +319,7 @@ _, decision = ta.propagate("NVDA", "2026-01-15")
 print(decision)
 ```
 
-See `tradingagents/default_config.py` for all configuration options.
+See `src/tradingagents/default_config.py` for all configuration options.
 
 ## Contributing
 

@@ -26,7 +26,7 @@ uv run pytest tests/tradingagents/graph/ -v
 uv run python -m cli.main
 
 # Run Web UI to test graph
-uv run chainlit run cli/web.py
+uv run chainlit run src/cli/web.py
 ```
 
 ### Standards & Conventions

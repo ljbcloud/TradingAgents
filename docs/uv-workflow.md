@@ -63,7 +63,7 @@ uv sync --frozen
 
 ```bash
 # Run with virtualenv
-uv run python main.py
+uv run python -m cli.main
 
 # Run module
 uv run python -m cli.main
@@ -145,7 +145,7 @@ pip install -r requirements.txt
 
 ```bash
 # Good - uses project virtualenv
-uv run python main.py
+uv run python -m cli.main
 
 # Avoid - requires manual venv activation
 python main.py

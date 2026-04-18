@@ -41,7 +41,7 @@ I specialize in the TradingAgents project structure, configuration management, a
 uv sync
 
 # Run main entry point
-uv run python main.py
+uv run python -m cli.main
 
 # Check Python version
 asdf current python
@@ -173,7 +173,7 @@ I specialize in managing configuration in the TradingAgents project. I understan
 uv run python -c "from tradingagents.default_config import DEFAULT_CONFIG; import pprint; pprint.pprint(DEFAULT_CONFIG)"
 
 # Test configuration changes
-uv run python main.py
+uv run python -m cli.main
 ```
 
 ### Standards & Conventions

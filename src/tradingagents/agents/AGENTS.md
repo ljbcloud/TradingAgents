@@ -25,7 +25,7 @@ uv run pytest tests/tradingagents/agents/analysts/ -v
 uv run python -m cli.main
 
 # Run Web UI to test analysts
-uv run chainlit run cli/web.py
+uv run chainlit run src/cli/web.py
 ```
 
 ### Standards & Conventions
@@ -133,7 +133,7 @@ uv run pytest tests/tradingagents/agents/trader/ -v
 uv run python -m cli.main
 
 # Run Web UI to test trader
-uv run chainlit run cli/web.py
+uv run chainlit run src/cli/web.py
 ```
 
 ### Standards & Conventions
@@ -189,7 +189,7 @@ uv run pytest tests/tradingagents/agents/risk_mgmt/ -v
 uv run python -m cli.main
 
 # Run Web UI to test risk management
-uv run chainlit run cli/web.py
+uv run chainlit run src/cli/web.py
 ```
 
 ### Standards & Conventions

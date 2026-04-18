@@ -74,7 +74,7 @@ I specialize in developing the web UI using Chainlit for the TradingAgents proje
 
 ```bash
 # Run Web UI
-uv run chainlit run cli/web.py
+uv run chainlit run src/cli/web.py
 
 # Test Web UI integration
 uv run pytest tests/cli/ -v

@@ -68,10 +68,14 @@ api = [
 tradingagents = "cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["tradingagents", "cli", "api"]
+packages = ["src/tradingagents", "src/cli", "src/api"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv", "venv"]
+targets = ["src"]
 skips = ["B101", "B601", "B110"]
 
 [tool.mypy]
@@ -160,11 +164,11 @@ unfixable = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tradingagents/**/*.py" = ["PD901"]
-"tradingagents/agents/utils/agent_utils.py" = ["F401"]
-"tradingagents/dataflows/alpha_vantage.py" = ["F401"]
-"tradingagents/dataflows/ccxt_crypto.py" = ["DTZ006", "PERF401"]
-"cli/**/*.py" = ["PD901"]
+"src/tradingagents/**/*.py" = ["PD901"]
+"src/tradingagents/agents/utils/agent_utils.py" = ["F401"]
+"src/tradingagents/dataflows/alpha_vantage.py" = ["F401"]
+"src/tradingagents/dataflows/ccxt_crypto.py" = ["DTZ006", "PERF401"]
+"src/cli/**/*.py" = ["PD901"]
 "tests/**/*.py" = ["S101"]
 "tests/tradingagents/radon/**/*.py" = [
     "E402",     # module level import not at top (section-based imports)
@@ -182,11 +186,13 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+asyncio_mode = "auto"
 addopts = [
     "--verbose",
     "--tb=short",
     "--cov=tradingagents",
     "--cov=cli",
+    "--cov=api",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
 ]
@@ -195,4 +201,5 @@ markers = [
     "integration: Integration tests",
     "slow: Slow-running tests",
     "llm: Tests requiring LLM interaction",
+    "asyncio: Async tests using pytest-asyncio",
 ]

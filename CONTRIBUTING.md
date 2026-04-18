@@ -58,7 +58,6 @@ uv sync
 
 **Run with virtualenv:**
 ```bash
-uv run python main.py
 uv run python -m cli.main
 ```
 
@@ -119,7 +118,7 @@ uv run python -m cli.main
 
 **Web mode:**
 ```bash
-uv run chainlit run cli/web.py
+uv run chainlit run src/cli/web.py
 ```
 
 ## Pull Request Process

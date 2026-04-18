@@ -3,6 +3,7 @@ import datetime
 import time
 from collections import deque
 from functools import wraps
+from importlib.resources import files
 from operator import itemgetter
 from pathlib import Path
 from typing import ClassVar
@@ -528,7 +529,9 @@ def get_user_selections():
         thinking agent configurations.
     """
     # Display ASCII art welcome message
-    welcome_ascii = Path("./cli/static/welcome.txt").read_text(encoding="utf-8")
+    welcome_ascii = (
+        files("cli.static").joinpath("welcome.txt").read_text(encoding="utf-8")
+    )
 
     # Create welcome box content
     welcome_content = f"{welcome_ascii}\n"
