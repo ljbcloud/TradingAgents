@@ -140,7 +140,7 @@ def mock_agent_state():
 
 @pytest.fixture
 def mock_yfinance_data(sample_stock_data):
-    with patch("tradingagents.dataflows.y_finance.yf") as mock:
+    with patch("dataflows.y_finance.yf") as mock:
         mock_ticker = MagicMock()
         mock_ticker.history.return_value = sample_stock_data
         mock_ticker.info = {"marketCap": 2500000000000}
@@ -150,7 +150,7 @@ def mock_yfinance_data(sample_stock_data):
 
 @pytest.fixture
 def mock_alpha_vantage():
-    with patch("tradingagents.dataflows.alpha_vantage.TimeSeries") as mock:
+    with patch("dataflows.alpha_vantage.TimeSeries") as mock:
         mock_ts = mock.return_value
         mock_ts.get_intraday.return_value = {
             "Meta Data": {"Symbol": "AAPL"},
@@ -161,5 +161,5 @@ def mock_alpha_vantage():
 
 @pytest.fixture(autouse=True)
 def mock_default_config(mock_config):
-    with patch("tradingagents.default_config.DEFAULT_CONFIG", mock_config):
+    with patch("default_config.DEFAULT_CONFIG", mock_config):
         yield

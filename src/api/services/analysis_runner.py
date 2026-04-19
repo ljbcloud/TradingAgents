@@ -65,7 +65,7 @@ class AnalysisRunner:
     ) -> tuple[dict, str]:
         """Synchronous wrapper executed in the thread pool."""
         # Lazy import — TradingAgentsGraph triggers heavy module loading
-        from tradingagents.graph.trading_graph import TradingAgentsGraph
+        from graph.trading_graph import TradingAgentsGraph
 
         logger.info("Starting analysis job_id=%s ticker=%s", job_id, ticker)
         ta = TradingAgentsGraph()
@@ -88,7 +88,7 @@ class AnalysisRunner:
         """
         await self._job_manager.update_status(job_id, "running")
 
-        from tradingagents.graph.trading_graph import TradingAgentsGraph
+        from graph.trading_graph import TradingAgentsGraph
 
         ta = TradingAgentsGraph()
         init_state = ta.propagator.create_initial_state(ticker, trade_date)

@@ -106,7 +106,7 @@ uv run pytest
 uv run pytest tests/test_file.py
 
 # Run with coverage
-uv run pytest --cov=tradingagents
+uv run pytest --cov=agents --cov=dataflows --cov=graph --cov=llm_clients --cov=radon
 ```
 
 ### Manual Testing

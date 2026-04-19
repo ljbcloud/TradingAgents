@@ -20,9 +20,7 @@ async def test_health_endpoint_returns_200(client):
 async def test_analyze_creates_job_returns_202(client):
     mock_tag = MagicMock()
     mock_tag.propagate.return_value = ({"final_trade_decision": "BUY"}, "BUY")
-    with patch(
-        "tradingagents.graph.trading_graph.TradingAgentsGraph", return_value=mock_tag
-    ):
+    with patch("graph.trading_graph.TradingAgentsGraph", return_value=mock_tag):
         resp = await client.post(
             "/api/analyze", json={"ticker": "AAPL", "trade_date": "2024-01-15"}
         )
@@ -98,9 +96,7 @@ async def test_stream_job_returns_event_stream(client):
         {"market_report": "bullish", "final_trade_decision": "BUY"},
     ])
 
-    with patch(
-        "tradingagents.graph.trading_graph.TradingAgentsGraph", return_value=mock_tag
-    ):
+    with patch("graph.trading_graph.TradingAgentsGraph", return_value=mock_tag):
         resp = await client.get("/api/jobs/stream-1/stream")
     assert resp.status_code == 200
     assert "text/event-stream" in resp.headers.get("content-type", "")

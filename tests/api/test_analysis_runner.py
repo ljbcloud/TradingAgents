@@ -16,9 +16,7 @@ async def test_start_analysis_success(fake_redis_async, tmp_results_dir):
 
     mock_tag = MagicMock()
     mock_tag.propagate.return_value = ({"final_trade_decision": "BUY"}, "BUY")
-    with patch(
-        "tradingagents.graph.trading_graph.TradingAgentsGraph", return_value=mock_tag
-    ):
+    with patch("graph.trading_graph.TradingAgentsGraph", return_value=mock_tag):
         await runner.start_analysis("run-1", "AAPL", "2024-01-15")
 
     job = await mgr.get_job("run-1")
@@ -38,9 +36,7 @@ async def test_start_analysis_failure(fake_redis_async, tmp_results_dir):
 
     mock_tag = MagicMock()
     mock_tag.propagate.side_effect = RuntimeError("LLM unavailable")
-    with patch(
-        "tradingagents.graph.trading_graph.TradingAgentsGraph", return_value=mock_tag
-    ):
+    with patch("graph.trading_graph.TradingAgentsGraph", return_value=mock_tag):
         await runner.start_analysis("run-2", "MSFT", "2024-01-15")
 
     job = await mgr.get_job("run-2")

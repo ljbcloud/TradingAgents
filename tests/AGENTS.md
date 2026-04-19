@@ -12,7 +12,7 @@ I specialize in writing tests for the TradingAgents project. I understand pytest
 - Tests are in tests/ directory, mirroring the source structure
 - Test fixtures are in tests/conftest.py
 - Tests use pytest framework
-- Test structure: tests/tradingagents/<module>/test_*.py
+- Test structure: tests/<module>/test_*.py
 - Coverage target: comprehensive coverage for trading logic
 - Run tests with `uv run pytest`
 
@@ -26,16 +26,16 @@ uv run pytest
 uv run pytest -v
 
 # Run tests with coverage
-uv run pytest --cov=tradingagents
+uv run pytest --cov=agents --cov=dataflows --cov=graph --cov=llm_clients --cov=radon
 
 # Run specific test file
-uv run pytest tests/tradingagents/agents/test_complex_state_transitions.py
+uv run pytest tests/agents/test_complex_state_transitions.py
 
 # Run specific test
-uv run pytest tests/tradingagents/agents/test_complex_state_transitions.py::test_specific_case
+uv run pytest tests/agents/test_complex_state_transitions.py::test_specific_case
 
 # Run tests in a directory
-uv run pytest tests/tradingagents/graph/
+uv run pytest tests/graph/
 ```
 
 ### Standards & Conventions

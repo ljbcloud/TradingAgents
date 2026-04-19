@@ -31,7 +31,7 @@
 
 ### Package Functionality
 
-**Test:** `uv run python -c "import tradingagents"`
+**Test:** `uv run python -c "from graph.trading_graph import TradingAgentsGraph"`
 - **Result:** ✅ PASSED
 - **Details:** Import successful
 - **Verification:** Package works with uv-managed dependencies

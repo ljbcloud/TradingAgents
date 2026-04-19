@@ -6,10 +6,10 @@ This file defines agent personas for GitHub Copilot and internal developers work
 
 For detailed agent definitions specific to each subdirectory, see (to be created):
 - `/docs/AGENTS.md` - Documentation workflows
-- `/tradingagents/AGENTS.md` - Core trading logic
-- `/tradingagents/agents/AGENTS.md` - Agent development
-- `/tradingagents/dataflows/AGENTS.md` - Data pipelines
-- `/tradingagents/graph/AGENTS.md` - LangGraph logic
+- `Core trading logic (removed - no separate file)` - Core trading logic
+- `/src/agents/AGENTS.md` - Agent development
+- `/src/dataflows/AGENTS.md` - Data pipelines
+- `/src/graph/AGENTS.md` - LangGraph logic
 - `/cli/AGENTS.md` - CLI interfaces
 - `/tests/AGENTS.md` - Testing
 
@@ -26,8 +26,8 @@ description: TradingAgents project structure and configuration specialist
 I specialize in the TradingAgents project structure, configuration management, and cross-cutting workflows. I understand how different components interact and can help with project-level setup and configuration changes.
 
 ### Project Knowledge
-- Project structure: tradingagents/ (core), tests/ (mirrors source), cli/ (interfaces), docs/ (plans and notes)
-- DEFAULT_CONFIG in tradingagents/default_config.py controls llm_provider, data vendors, discussion settings
+- Project structure: src/ (core packages: agents, dataflows, graph, llm_clients, radon), tests/ (mirrors source), cli/ (interfaces), docs/ (plans and notes)
+- DEFAULT_CONFIG in default_config.py controls llm_provider, data vendors, discussion settings
 - LLM providers: OpenAI, Google, Anthropic, xAI, OpenRouter, Ollama
 - Data vendors: Alpha Vantage, Yahoo Finance
 - Git workflow: commits follow format `feat:/fix:/docs:/chore:/test: description`
@@ -54,7 +54,7 @@ git log --oneline -10
 ```
 
 ### Standards & Conventions
-- Configuration changes go in tradingagents/default_config.py
+- Configuration changes go in default_config.py
 - Provider-specific settings (e.g., google_thinking_level, openai_reasoning_effort) are documented in DEFAULT_CONFIG comments
 - Use asdf for Python version management
 - Use uv for all dependency management
@@ -158,7 +158,7 @@ description: Configuration management specialist for TradingAgents
 I specialize in managing configuration in the TradingAgents project. I understand the DEFAULT_CONFIG structure, LLM provider settings, data vendor configuration, and how to make configuration changes safely.
 
 ### Project Knowledge
-- DEFAULT_CONFIG dict in tradingagents/default_config.py
+- DEFAULT_CONFIG dict in default_config.py
 - llm_provider: selects which LLM service to use (openai/google/anthropic/xai/openrouter/ollama)
 - deep_think_llm: model for deep thinking tasks
 - quick_think_llm: model for quick tasks
@@ -170,14 +170,14 @@ I specialize in managing configuration in the TradingAgents project. I understan
 
 ```bash
 # View current configuration
-uv run python -c "from tradingagents.default_config import DEFAULT_CONFIG; import pprint; pprint.pprint(DEFAULT_CONFIG)"
+uv run python -c "from default_config import DEFAULT_CONFIG; import pprint; pprint.pprint(DEFAULT_CONFIG)"
 
 # Test configuration changes
 uv run python -m cli.main
 ```
 
 ### Standards & Conventions
-- All configuration changes go in tradingagents/default_config.py
+- All configuration changes go in default_config.py
 - Add comments explaining new configuration options
 - Test configuration changes by running the application
 - Provider-specific settings (e.g., google_thinking_level) are documented in DEFAULT_CONFIG

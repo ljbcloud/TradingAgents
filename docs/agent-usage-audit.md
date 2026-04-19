@@ -219,7 +219,9 @@ from tradingagents.dataflows.interface import route_to_vendor
   ```python
   @tool
   def get_indicators(symbol, indicator, curr_date, look_back_days=30) -> str:
-      return route_to_vendor("get_indicators", symbol, indicator, curr_date, look_back_days)
+      return route_to_vendor(
+          "get_indicators", symbol, indicator, curr_date, look_back_days
+      )
   ```
 - **Error Handling**: None (direct pass-through)
 - **Expected Return Type**: `str` (formatted dataframe or error string)
@@ -416,7 +418,7 @@ return f"Error retrieving fundamentals for {ticker}: {e!s}"
 raise VendorError(
     f"Error retrieving fundamentals for {ticker}: {e!s}",
     function="get_fundamentals",
-    vendor="yfinance"
+    vendor="yfinance",
 )
 # LLM sees: "Tool get_fundamentals raised VendorError"
 # Error details buried in exception, not displayed
@@ -508,6 +510,7 @@ Return structured responses that include error information:
 ```python
 from typing import Dict, Union
 
+
 @tool
 def get_stock_data(symbol, start_date, end_date) -> Dict[str, Union[str, dict]]:
     try:
@@ -518,7 +521,7 @@ def get_stock_data(symbol, start_date, end_date) -> Dict[str, Union[str, dict]]:
             "status": "error",
             "error_type": type(e).__name__,
             "error_message": str(e),
-            "details": getattr(e, '__dict__', {})
+            "details": getattr(e, "__dict__", {}),
         }
 ```
 

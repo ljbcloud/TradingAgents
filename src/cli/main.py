@@ -36,8 +36,8 @@ from cli.utils import (
     select_research_depth,
     select_shallow_thinking_agent,
 )
-from tradingagents.default_config import DEFAULT_CONFIG
-from tradingagents.graph.trading_graph import TradingAgentsGraph
+from default_config import DEFAULT_CONFIG
+from graph.trading_graph import TradingAgentsGraph
 
 # Load environment variables from .env file
 load_dotenv()

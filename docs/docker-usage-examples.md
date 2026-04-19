@@ -136,8 +136,8 @@ Uncomment volumes section in `docker/docker-compose.yml`:
 volumes:
   - ../:/app
   - /app/.git
-  - /app/src/tradingagents/__pycache__
-  - /app/src/tradingagents/**/__pycache__
+  - /app/src/agents/__pycache__
+  - /app/src/dataflows/__pycache__
 ```
 
 Then:

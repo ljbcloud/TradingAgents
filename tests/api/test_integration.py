@@ -11,9 +11,7 @@ if TYPE_CHECKING:
 async def test_full_flow_analyze_poll_result(client):
     mock_tag = MagicMock()
     mock_tag.propagate.return_value = ({"final_trade_decision": "BUY"}, "BUY")
-    with patch(
-        "tradingagents.graph.trading_graph.TradingAgentsGraph", return_value=mock_tag
-    ):
+    with patch("graph.trading_graph.TradingAgentsGraph", return_value=mock_tag):
         analyze_resp = await client.post(
             "/api/analyze",
             json={"ticker": "MSFT", "asset_type": "stock", "trade_date": "2024-01-15"},
@@ -56,9 +54,7 @@ async def test_sse_stream_flow(client):
     assert analyze_resp.status_code == 202
     job_id = analyze_resp.json()["job_id"]
 
-    with patch(
-        "tradingagents.graph.trading_graph.TradingAgentsGraph", return_value=mock_tag
-    ):
+    with patch("graph.trading_graph.TradingAgentsGraph", return_value=mock_tag):
         stream_resp = await client.get(f"/api/jobs/{job_id}/stream")
     assert stream_resp.status_code == 200
 

@@ -4,8 +4,8 @@ from datetime import datetime
 import chainlit as cl
 from dotenv import load_dotenv
 
-from tradingagents.default_config import DEFAULT_CONFIG
-from tradingagents.graph.trading_graph import TradingAgentsGraph
+from default_config import DEFAULT_CONFIG
+from graph.trading_graph import TradingAgentsGraph
 
 load_dotenv()
 
@@ -71,8 +71,7 @@ Let's configure your analysis session.
     if date_response.get("output").strip():
         try:
             analysis_date = (
-                datetime
-                .strptime(date_response.get("output"), "%Y-%m-%d")
+                datetime.strptime(date_response.get("output"), "%Y-%m-%d")
                 .replace(tzinfo=datetime.timezone.utc)
                 .date()
             )

@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       redis:
         image: redis:7.2-alpine
@@ -18,42 +18,42 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    
+
     - name: Install uv
       run: pip install uv
-    
+
     - name: Install ruff
       run: uv tool install ruff
-    
+
     - name: Lint with ruff
       run: ruff check .
-    
+
     - name: Check formatting with ruff
       run: ruff format --check .
-    
+
     - name: Set up Docker Compose
       run: |
         cd docker
         docker compose build
-    
+
     - name: Test TUI mode
       run: |
         cd docker
-        APP_MODE=tui docker compose run --rm app uv run python -c "import tradingagents; print('TUI mode test passed')"
-    
+        APP_MODE=tui docker compose run --rm app uv run python -c "from graph.trading_graph import TradingAgentsGraph; print('TUI mode test passed')"
+
     - name: Test Web mode
       run: |
         cd docker
         APP_MODE=web docker compose up -d
         timeout 60s bash -c 'until docker compose ps | grep -q "running"; do sleep 2; done'
-        docker compose exec -T app uv run python -c "import tradingagents; print('Web mode test: Import successful')"
+        docker compose exec -T app uv run python -c "from graph.trading_graph import TradingAgentsGraph; print('Web mode test: Import successful')"
         curl -f http://localhost:8501 || echo "Web mode test: Server started successfully"
         docker compose down

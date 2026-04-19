@@ -65,7 +65,7 @@ api = [
 tradingagents = "cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tradingagents", "src/cli", "src/api"]
+packages = ["src/agents", "src/dataflows", "src/graph", "src/llm_clients", "src/radon", "src/cli", "src/api"]
 
 [tool.hatch.build.targets.wheel.sources]
 "src" = ""
@@ -161,13 +161,13 @@ unfixable = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"src/tradingagents/**/*.py" = ["PD901"]
-"src/tradingagents/agents/utils/agent_utils.py" = ["F401"]
-"src/tradingagents/dataflows/alpha_vantage.py" = ["F401"]
-"src/tradingagents/dataflows/ccxt_crypto.py" = ["DTZ006", "PERF401"]
+"src/**/*.py" = ["PD901"]
+"src/agents/utils/agent_utils.py" = ["F401"]
+"src/dataflows/alpha_vantage.py" = ["F401"]
+"src/dataflows/ccxt_crypto.py" = ["DTZ006", "PERF401"]
 "src/cli/**/*.py" = ["PD901"]
 "tests/**/*.py" = ["S101"]
-"tests/tradingagents/radon/**/*.py" = [
+"tests/radon/**/*.py" = [
     "E402",     # module level import not at top (section-based imports)
     "FBT003",   # boolean positional value in @patch() calls
     "PLR0904",  # too many public methods in test classes
@@ -176,7 +176,7 @@ unfixable = [
     "S105",     # hardcoded password in test fixtures
     "S106",     # hardcoded password argument in test fixtures
 ]
-"tests/tradingagents/dataflows/test_ccxt_common.py" = ["SIM117"]
+"tests/dataflows/test_ccxt_common.py" = ["SIM117"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -187,7 +187,11 @@ asyncio_mode = "auto"
 addopts = [
     "--verbose",
     "--tb=short",
-    "--cov=tradingagents",
+    "--cov=agents",
+    "--cov=dataflows",
+    "--cov=graph",
+    "--cov=llm_clients",
+    "--cov=radon",
     "--cov=cli",
     "--cov=api",
     "--cov-report=term-missing",
