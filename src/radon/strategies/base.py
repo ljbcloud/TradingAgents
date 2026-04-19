@@ -89,7 +89,7 @@ class StrategyRegistry:
     """Dict-based registry for strategy classes, keyed by strategy_id.
 
     Follows the simple dict-routing pattern used in
-    tradingagents/dataflows/interface.py (VENDOR_METHODS).  Strategies
+    dataflows/interface.py (VENDOR_METHODS).  Strategies
     register themselves explicitly; there is no metaclass auto-registration.
 
     Usage::
